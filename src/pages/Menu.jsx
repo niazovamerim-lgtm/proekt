@@ -4,6 +4,7 @@ import { useFetch } from '../hooks/useFetch'
 import { getMenu } from '../services/api'
 import MenuCard from '../components/MenuCard'
 import { SkeletonList } from '../components/Skeleton'
+import { useNavigate } from 'react-router-dom'
 import './Menu.css'
 
 const CATEGORIES = [
@@ -14,11 +15,23 @@ const CATEGORIES = [
   { key: 'drink', labelKey: 'filterDrink' },
 ]
 
+// "admin" деп жазылса admin панелине алып кетет
+const ADMIN_KEYWORDS = ['admin', 'админ', 'Admin', 'Админ', 'ADMIN', 'АДМИН']
+
 export default function Menu() {
   const { t } = useLang()
+  const navigate = useNavigate()
   const { data: items, loading, error } = useFetch(getMenu, [])
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
+
+  const handleSearch = (value) => {
+    if (ADMIN_KEYWORDS.includes(value.trim())) {
+      navigate('/admin/login')
+      return
+    }
+    setSearch(value)
+  }
 
   const filtered = useMemo(() => {
     if (!items) return []
@@ -43,7 +56,7 @@ export default function Menu() {
             className="menu-page__search"
             placeholder={t('search') + '...'}
             value={search}
-            onChange={e => setSearch(e.target.value)}
+            onChange={e => handleSearch(e.target.value)}
           />
           {search && (
             <button className="menu-page__search-clear" onClick={() => setSearch('')}>✕</button>

@@ -25,7 +25,6 @@ export default function Header() {
     { labelKey: 'giftcard', path: '/giftcard' },
     { labelKey: 'favorites', path: '/favorites' },
     { labelKey: 'auth', path: '/auth' },
-    { label: '⚙️ Admin', path: '/admin/login' },
   ]
 
   return (
