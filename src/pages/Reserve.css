@@ -1,0 +1,219 @@
+.reserve__content {
+  max-width: 1000px;
+}
+
+/* Tabs */
+.reserve__tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 24px;
+}
+
+.reserve__tab {
+  flex: 1;
+  padding: 16px 24px;
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  border: 1px solid var(--color-border);
+  background: var(--color-card-bg);
+  color: var(--color-cream);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  text-align: center;
+}
+
+.reserve__tab:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.reserve__tab:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.reserve__tab--active {
+  background: rgba(50, 35, 10, 0.95);
+  border-color: var(--color-gold-dim);
+  color: var(--color-gold-light);
+}
+
+/* Panels */
+.reserve__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.reserve__panel {
+  display: none;
+}
+
+.reserve__panel--active {
+  display: block;
+}
+
+/* On desktop show both */
+@media (min-width: 769px) {
+  .reserve__panel {
+    display: block !important;
+  }
+}
+
+.reserve__panel-title {
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--color-cream);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+/* Form */
+.reserve__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reserve__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.reserve__label {
+  font-size: 0.9rem;
+  color: var(--color-cream);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.reserve__field-icon {
+  font-size: 1rem;
+}
+
+.reserve__input {
+  background: rgba(30, 20, 8, 0.3);
+  color: var(--color-cream);
+  padding: 8px 4px;
+}
+
+.reserve__input option {
+  background: #2c1f0f;
+  color: #f5ead8;
+}
+
+[data-theme="light"] .reserve__input {
+  background: rgba(255, 245, 220, 0.5);
+  color: #2c1f0f;
+}
+
+[data-theme="light"] .reserve__input option {
+  background: #fff8ee;
+  color: #2c1f0f;
+}
+
+.reserve__submit {
+  width: 100%;
+  padding: 14px;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  letter-spacing: 0.1em;
+}
+
+/* My reservations */
+.reserve__empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 20px 0;
+}
+
+.reserve__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.reserve__item {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 14px;
+}
+
+.reserve__item-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.reserve__item-date {
+  font-size: 0.9rem;
+  color: var(--color-cream);
+}
+
+.reserve__status {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.reserve__status--confirmed {
+  color: #7ed97e;
+}
+
+.reserve__status--pending {
+  color: #e8c97a;
+}
+
+.reserve__status--cancelled {
+  color: #e87a7a;
+}
+
+.reserve__item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.reserve__action-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+.reserve__action-btn:hover {
+  color: var(--color-cream);
+}
+
+.reserve__action-btn--cancel {
+  color: #e87a7a;
+  border-color: rgba(232, 122, 122, 0.3);
+}
+
+.reserve__action-btn--cancel:hover {
+  color: #ff5555;
+}
+
+@media (max-width: 768px) {
+  .reserve__panels {
+    grid-template-columns: 1fr;
+  }
+
+  .reserve__tabs {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .reserve__tab {
+    border-radius: 4px !important;
+  }
+}

@@ -1,0 +1,202 @@
+.addresses__body {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-bottom: 20px;
+}
+
+/* Address list */
+.addresses__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.addresses__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  font-size: 0.95rem;
+  color: var(--color-cream);
+  cursor: pointer;
+  border-radius: 4px;
+  border-left: 3px solid transparent;
+  transition: background 0.2s, border-color 0.2s;
+  background: rgba(30, 20, 8, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.addresses__item:hover {
+  background: rgba(50, 35, 10, 0.7);
+}
+
+.addresses__item--active {
+  border-left-color: var(--color-gold);
+  background: rgba(50, 35, 10, 0.9);
+  color: var(--color-gold-light);
+  font-weight: 600;
+}
+
+.addresses__pin-icon {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+/* ---- Interactive map ---- */
+.addresses__map-wrap {
+  background: var(--color-card-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  overflow: hidden;
+  backdrop-filter: blur(6px);
+}
+
+.addresses__map-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addresses__map-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-gold-light);
+}
+
+.addresses__map-canvas {
+  position: relative;
+  height: 340px;
+  background: linear-gradient(160deg, #1e2a1a 0%, #1a2218 50%, #162018 100%);
+  overflow: hidden;
+}
+
+/* Сетка улиц */
+.addresses__map-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(201,168,76,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.07) 1px, transparent 1px),
+    linear-gradient(rgba(201,168,76,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,168,76,0.04) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+}
+
+/* Пины */
+.addresses__map-pin {
+  position: absolute;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transform: translate(-50%, -100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  z-index: 2;
+}
+
+.addresses__pin-svg {
+  width: 28px;
+  height: 36px;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+  transition: transform 0.2s;
+}
+
+.addresses__map-pin:hover .addresses__pin-svg,
+.addresses__map-pin--active .addresses__pin-svg {
+  transform: scale(1.25);
+}
+
+.addresses__pin-label {
+  background: var(--color-bg-dark);
+  border: 1px solid var(--color-gold-dim);
+  color: var(--color-cream);
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  white-space: nowrap;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  font-family: var(--font-body);
+}
+
+/* Selected */
+.addresses__selected {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.addresses__selected-label {
+  color: var(--color-text-muted);
+  font-size: 0.88rem;
+  white-space: nowrap;
+}
+
+.addresses__selected-value {
+  color: var(--color-cream);
+  font-size: 1rem;
+  font-weight: 600;
+  flex: 1;
+}
+
+.addresses__btn {
+  display: inline-block;
+  padding: 10px 20px;
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+/* Light theme */
+[data-theme="light"] .addresses__map-canvas {
+  background: linear-gradient(160deg, #c8d8b0 0%, #b8cc9a 50%, #a8c088 100%);
+}
+
+[data-theme="light"] .addresses__map-grid {
+  background-image:
+    linear-gradient(rgba(50,80,30,0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(50,80,30,0.12) 1px, transparent 1px),
+    linear-gradient(rgba(50,80,30,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(50,80,30,0.06) 1px, transparent 1px);
+  background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+}
+
+[data-theme="light"] .addresses__item {
+  background: rgba(255,245,220,0.7);
+}
+
+[data-theme="light"] .addresses__item:hover {
+  background: rgba(255,235,180,0.85);
+}
+
+[data-theme="light"] .addresses__item--active {
+  background: rgba(255,225,150,0.9);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .addresses__body {
+    grid-template-columns: 1fr;
+  }
+
+  .addresses__map-canvas {
+    height: 260px;
+  }
+
+  .addresses__selected {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .addresses__btn {
+    width: 100%;
+    text-align: center;
+  }
+}

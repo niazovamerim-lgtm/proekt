@@ -1,0 +1,90 @@
+import React, { useState, useMemo } from 'react'
+import { useLang } from '../context/LangContext'
+import { useFetch } from '../hooks/useFetch'
+import { getMenu } from '../services/api'
+import MenuCard from '../components/MenuCard'
+import { SkeletonList } from '../components/Skeleton'
+import './Menu.css'
+
+const CATEGORIES = [
+  { key: 'all', labelKey: 'filterAll' },
+  { key: 'hot', labelKey: 'filterHot' },
+  { key: 'cold', labelKey: 'filterCold' },
+  { key: 'dessert', labelKey: 'filterDessert' },
+  { key: 'drink', labelKey: 'filterDrink' },
+]
+
+export default function Menu() {
+  const { t } = useLang()
+  const { data: items, loading, error } = useFetch(getMenu, [])
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('all')
+
+  const filtered = useMemo(() => {
+    if (!items) return []
+    return items.filter(item => {
+      const matchCat = activeCategory === 'all' || item.category === activeCategory
+      const matchSearch = item.name?.toLowerCase().includes(search.toLowerCase()) ||
+        item.desc?.toLowerCase().includes(search.toLowerCase())
+      return matchCat && matchSearch
+    })
+  }, [items, search, activeCategory])
+
+  return (
+    <div className="page-bg">
+      <div className="page-content menu-page__content">
+        <h1 className="page-title">{t('menu')}</h1>
+        <div className="page-title-divider" />
+
+        <div className="menu-page__search-wrap">
+          <span className="menu-page__search-icon">🔍</span>
+          <input
+            type="text"
+            className="menu-page__search"
+            placeholder={t('search') + '...'}
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button className="menu-page__search-clear" onClick={() => setSearch('')}>✕</button>
+          )}
+        </div>
+
+        <div className="menu-page__filters">
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.key}
+              className={`menu-page__filter-btn ${activeCategory === cat.key ? 'menu-page__filter-btn--active' : ''}`}
+              onClick={() => setActiveCategory(cat.key)}
+            >
+              {t(cat.labelKey)}
+            </button>
+          ))}
+        </div>
+
+        {loading && <SkeletonList count={6} />}
+        {error && <div className="menu-page__error">⚠️ {error}</div>}
+
+        {!loading && !error && filtered.length === 0 && (
+          <div className="menu-page__empty">
+            <span>🍽️</span>
+            <p>{t('noResults')}</p>
+          </div>
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
+          <>
+            <p className="menu-page__count">
+              Найдено: <strong>{filtered.length}</strong>
+            </p>
+            <div className="menu-page__grid">
+              {filtered.map(item => (
+                <MenuCard key={item.id} item={item} />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
