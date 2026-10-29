@@ -1,12 +1,12 @@
 .skeleton {
   background: linear-gradient(90deg,
-    rgba(201,168,76,0.08) 25%,
-    rgba(201,168,76,0.18) 50%,
-    rgba(201,168,76,0.08) 75%
+    rgba(185,148,92,.08) 25%,
+    rgba(185,148,92,.18) 50%,
+    rgba(185,148,92,.08) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 @keyframes shimmer {
@@ -23,7 +23,7 @@
 .skeleton-card {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
-  border-radius: 4px;
+  border-radius: 11px;
   overflow: hidden;
 }
 

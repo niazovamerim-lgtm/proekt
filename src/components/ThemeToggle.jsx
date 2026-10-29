@@ -11,7 +11,7 @@ export default function ThemeToggle() {
     <button
       className={`theme-toggle ${theme === 'light' ? 'theme-toggle--light' : ''}`}
       onClick={toggleTheme}
-      aria-label="Тема которуу"
+      aria-label={t('toggleTheme')}
       title={theme === 'dark' ? t('themeDay') : t('themeNight')}
     >
       <span className="theme-toggle__icon">

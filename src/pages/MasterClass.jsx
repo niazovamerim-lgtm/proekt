@@ -1,79 +1,83 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
+import { useLang } from '../context/LangContext'
+import { getMasterClasses } from '../services/api'
 import './SimplePage.css'
 
-const classes = [
-  {
-    title: 'Итальянская паста',
-    date: '2026-10-15',
-    time: '14:00',
-    duration: '3 часа',
-    price: '2 500 KGS',
-    seats: 8,
-    img: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?w=400&q=80',
-  },
-  {
-    title: 'Французские десерты',
-    date: '2026-10-22',
-    time: '11:00',
-    duration: '4 часа',
-    price: '3 000 KGS',
-    seats: 6,
-    img: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80',
-  },
-  {
-    title: 'Суши и роллы',
-    date: '2026-11-05',
-    time: '16:00',
-    duration: '3 часа',
-    price: '2 800 KGS',
-    seats: 10,
-    img: 'https://images.unsplash.com/photo-1553621042-f6e147245754?w=400&q=80',
-  },
-]
-
 export default function MasterClass() {
+  const { t, lang, translateError } = useLang()
+  const [classes, setClasses] = useState([])
   const [enrolled, setEnrolled] = useState([])
+  const [error, setError] = useState('')
 
-  const enroll = (title) => {
-    if (!enrolled.includes(title)) setEnrolled([...enrolled, title])
+  useEffect(() => {
+    let active = true
+    getMasterClasses()
+      .then(savedClasses => {
+        if (active) setClasses(savedClasses)
+      })
+      .catch(requestError => {
+        if (active) setError(translateError(requestError))
+      })
+    return () => { active = false }
+  }, [translateError])
+
+  const enroll = (id) => {
+    if (!enrolled.includes(id)) setEnrolled([...enrolled, id])
   }
+
+  const locale = lang === 'kg' ? 'ky-KG' : lang === 'en' ? 'en-US' : 'ru-RU'
 
   return (
     <div className="page-bg">
       <div className="page-content">
-        <h1 className="page-title">Мастер-классы</h1>
+        <h1 className="page-title">{t('masterclasses')}</h1>
         <div className="page-title-divider" />
 
         <p className="simple-page__desc">
-          Научитесь готовить шедевры под руководством наших шеф-поваров.
-          Каждый мастер-класс — это уникальный опыт, который вы унесёте с собой.
+          {t('masterclassDescription')}
         </p>
 
+        {error && <p className="simple-page__error" role="alert">{error}</p>}
+        {!error && classes.length === 0 && <p className="simple-page__booking-empty">{t('adminLoading')}</p>}
+
         <div className="simple-page__mc-grid">
-          {classes.map((cls) => (
-            <div key={cls.title} className="card simple-page__mc-card">
-              <div className="simple-page__mc-img-wrap">
-                <img src={cls.img} alt={cls.title} className="simple-page__mc-img" />
-              </div>
-              <div className="simple-page__mc-body">
-                <h3 className="simple-page__mc-title">{cls.title}</h3>
-                <div className="simple-page__mc-meta">
-                  <span>📅 {cls.date}</span>
-                  <span>🕐 {cls.time}</span>
-                  <span>⏱ {cls.duration}</span>
-                  <span>👥 Мест: {cls.seats}</span>
+          {classes.map((cls) => {
+            const title = lang === 'kg' ? cls.titleKg || cls.title : lang === 'en' ? cls.titleEn || cls.title : cls.title
+            const duration = lang === 'kg' ? cls.durationKg || cls.duration : lang === 'en' ? cls.durationEn || cls.duration : cls.duration
+            const isEnrolled = enrolled.includes(cls.id)
+            return (
+              <div key={cls.id} className="card simple-page__mc-card">
+                <div className="simple-page__mc-img-wrap">
+                  <img
+                    src={cls.img}
+                    alt={title}
+                    className="simple-page__mc-img"
+                    loading="lazy"
+                    decoding="async"
+                    width="400"
+                    height="260"
+                  />
                 </div>
-                <p className="simple-page__mc-price">{cls.price}</p>
-                <button
-                  className={enrolled.includes(cls.title) ? 'btn-dark simple-page__btn' : 'btn-gold simple-page__btn'}
-                  onClick={() => enroll(cls.title)}
-                  disabled={enrolled.includes(cls.title)}
-                >
-                  {enrolled.includes(cls.title) ? '✓ Записан' : 'Записаться'}
-                </button>
+                <div className="simple-page__mc-body">
+                  <h3 className="simple-page__mc-title">{title}</h3>
+                  <div className="simple-page__mc-meta">
+                    <span>📅 {new Date(`${cls.date}T12:00:00`).toLocaleDateString(locale)}</span>
+                    <span>🕐 {cls.time}</span>
+                    <span>⏱ {duration}</span>
+                    <span>👥 {t('seats')} {cls.seats}</span>
+                  </div>
+                  <p className="simple-page__mc-price">{cls.price}</p>
+                  <button
+                    className={isEnrolled ? 'btn-dark simple-page__btn' : 'btn-gold simple-page__btn'}
+                    onClick={() => enroll(cls.id)}
+                    disabled={isEnrolled}
+                  >
+                    {isEnrolled ? `✓ ${t('registered')}` : t('signUp')}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     </div>

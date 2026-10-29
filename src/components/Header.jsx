@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useLang } from '../context/LangContext'
+import { useAuth } from '../context/AuthContext'
 import CartDrawer from './CartDrawer'
 import ThemeToggle from './ThemeToggle'
 import LangSwitcher from './LangSwitcher'
@@ -12,19 +13,21 @@ export default function Header() {
   const [cartOpen, setCartOpen] = useState(false)
   const { count } = useCart()
   const { t } = useLang()
+  const { user } = useAuth()
   const navigate = useNavigate()
+  const accountPath = user ? '/profile' : '/auth'
 
   const navItems = [
     { labelKey: 'about', path: '/' },
     { labelKey: 'addresses', path: '/addresses' },
     { labelKey: 'menu', path: '/menu' },
-    { labelKey: 'reserve', path: '/reserve' },
+    { labelKey: 'booking', path: '/reserve' },
     { labelKey: 'catering', path: '/catering' },
     { labelKey: 'masterclass', path: '/masterclass' },
     { labelKey: 'reviews', path: '/reviews' },
     { labelKey: 'giftcard', path: '/giftcard' },
     { labelKey: 'favorites', path: '/favorites' },
-    { labelKey: 'auth', path: '/auth' },
+    { labelKey: user ? 'profile' : 'auth', path: accountPath },
   ]
 
   return (
@@ -42,9 +45,17 @@ export default function Header() {
             <LangSwitcher />
             <ThemeToggle />
             <button
+              className="header__profile-btn"
+              onClick={() => navigate(accountPath)}
+              aria-label={user ? t('headerOpenProfile') : t('headerSignIn')}
+              title={user ? t('profile') : t('auth')}
+            >
+              {user ? user.name.trim().charAt(0).toLocaleUpperCase() : '♙'}
+            </button>
+            <button
               className="header__cart-btn"
               onClick={() => setCartOpen(true)}
-              aria-label="Корзина"
+              aria-label={t('headerCart')}
             >
               🛒
               {count > 0 && <span className="header__cart-badge">{count}</span>}
@@ -55,7 +66,7 @@ export default function Header() {
           <button
             className={`header__burger ${menuOpen ? 'header__burger--open' : ''}`}
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Меню ач"
+            aria-label={t('headerMenu')}
           >
             <span /><span /><span />
           </button>
@@ -74,17 +85,11 @@ export default function Header() {
                   }
                   onClick={() => setMenuOpen(false)}
                 >
-                  {item.label || t(item.labelKey)}
+                  {t(item.labelKey)}
                 </NavLink>
               </li>
             ))}
           </ul>
-          <button
-            className="btn-gold header__book-btn"
-            onClick={() => { navigate('/reserve'); setMenuOpen(false) }}
-          >
-            {t('book')}
-          </button>
         </nav>
       </header>
 

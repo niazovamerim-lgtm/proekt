@@ -434,6 +434,100 @@
   margin-left: 6px;
 }
 
+/* ---- Profile ---- */
+.simple-page__profile-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.simple-page__profile-card {
+  width: 100%;
+  max-width: 560px;
+}
+
+.simple-page__profile-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 26px;
+}
+
+.simple-page__profile-avatar {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  color: var(--color-bg-dark);
+  background: linear-gradient(140deg, var(--color-gold-light), var(--color-gold-dim));
+  border-radius: 50%;
+  font-size: 1.45rem;
+  font-weight: 700;
+}
+
+.simple-page__profile-eyebrow {
+  margin-bottom: 4px;
+  color: var(--color-text-muted);
+  font-size: .78rem;
+}
+
+.simple-page__profile-title {
+  color: var(--color-cream);
+  font-family: var(--font-heading);
+  font-size: 1.7rem;
+}
+
+.simple-page__profile-password,
+.simple-page__profile-support {
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.simple-page__profile-password h2,
+.simple-page__profile-support h2 {
+  color: var(--color-cream);
+  font-size: 1rem;
+}
+
+.simple-page__profile-password p {
+  margin-top: -7px;
+  color: var(--color-text-muted);
+  font-size: .82rem;
+}
+
+.simple-page__profile-support a {
+  color: var(--color-gold-light);
+  font-size: .9rem;
+}
+
+.simple-page__profile-logout {
+  margin-top: 22px;
+  padding: 10px 14px;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.simple-page__profile-logout:hover { color: var(--color-cream); }
+.simple-page__profile-logout:disabled { opacity: .6; cursor: wait; }
+
+/* ---- Reservations ---- */
+.simple-page__booking-wrap { max-width: 1100px; }
+.simple-page__booking-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.simple-page__booking-card { min-width: 0; }
+.simple-page__booking-card .section-heading { margin-bottom: 20px; }
+.simple-page__booking-empty { padding: 24px 0; color: var(--color-text-muted); text-align: center; }
+.simple-page__booking-list { display: grid; gap: 14px; list-style: none; }
+.simple-page__booking-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--color-border); }
+.simple-page__booking-item strong { color: var(--color-cream); }
+.simple-page__booking-item p { margin-top: 5px; color: var(--color-text-muted); font-size: .85rem; }
+.simple-page__booking-status { display: inline-block; margin-top: 8px; color: var(--color-gold-light); font-size: .8rem; }
+.simple-page__booking-item .simple-page__profile-logout { flex: 0 0 auto; margin: 0; }
+
 /* ---- Status messages ---- */
 .simple-page__success {
   background: rgba(100, 200, 100, 0.12);
@@ -483,4 +577,5 @@
   .simple-page__form-grid {
     grid-template-columns: 1fr;
   }
+  .simple-page__booking-grid { grid-template-columns: 1fr; }
 }

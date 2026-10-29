@@ -10,7 +10,7 @@
   font-size: 0.72rem;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: 3px;
+  border-radius: 2px;
   cursor: pointer;
   transition: all 0.2s;
   white-space: nowrap;
@@ -22,8 +22,8 @@
 }
 
 .lang-switcher__btn--active {
-  background: var(--color-gold-dim);
+  background: rgba(185,148,92,.12);
   border-color: var(--color-gold);
-  color: var(--color-bg-dark);
+  color: var(--color-gold-light);
   font-weight: 700;
 }

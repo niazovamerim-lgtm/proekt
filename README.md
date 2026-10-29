@@ -1,16 +1,14 @@
-# React + Vite
+# Рестик
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Запуск
 
-Currently, two official plugins are available:
+Требуется Node.js 22.13 или новее.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+1. Скопируйте `.env.example` в `.env` и задайте `ADMIN_LOGIN` и уникальный `ADMIN_PASSWORD`.
+2. Запустите сайт и API одной командой: `npm run dev`.
 
-## React Compiler
+Для отдельного запуска API можно использовать `npm run dev:api`, а для фронтенда — `npm run dev:vite`. Vite проксирует `/api` на локальный сервер. Аккаунты, сессии, новые заказы, бронирования, отзывы и мастер-классы хранятся в SQLite в папке `data` (путь можно изменить через `DATA_DIR`). Новые заказы сохраняются локально; прежние заказы из `VITE_API_URL` также остаются видны в админ-панели. Меню по-прежнему хранится в API из `VITE_API_URL`; переводы названий и описаний сохраняются вместе с блюдом. База данных не должна располагаться на временной файловой системе: для production используйте Node-хостинг с постоянным диском, соберите сайт командой `npm run build` и запустите `npm start`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Telegram
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Регистрация и список пользователей в админ-панели работают без Telegram. Чтобы получать уведомления о новых аккаунтах, создайте бота через `@BotFather`, получите chat ID и задайте `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` только в переменных окружения сервера. После этого перезапустите API. Токен нельзя добавлять в `VITE_*` переменные или клиентский код.

@@ -19,7 +19,7 @@ const CATEGORIES = [
 const ADMIN_KEYWORDS = ['admin', 'админ', 'Admin', 'Админ', 'ADMIN', 'АДМИН']
 
 export default function Menu() {
-  const { t } = useLang()
+  const { t, lang, translateError } = useLang()
   const navigate = useNavigate()
   const { data: items, loading, error } = useFetch(getMenu, [])
   const [search, setSearch] = useState('')
@@ -37,11 +37,13 @@ export default function Menu() {
     if (!items) return []
     return items.filter(item => {
       const matchCat = activeCategory === 'all' || item.category === activeCategory
-      const matchSearch = item.name?.toLowerCase().includes(search.toLowerCase()) ||
-        item.desc?.toLowerCase().includes(search.toLowerCase())
+      const name = lang === 'kg' ? item.nameKg || item.name : lang === 'en' ? item.nameEn || item.name : item.name
+      const desc = lang === 'kg' ? item.descKg || item.desc : lang === 'en' ? item.descEn || item.desc : item.desc
+      const matchSearch = name?.toLowerCase().includes(search.toLowerCase()) ||
+        desc?.toLowerCase().includes(search.toLowerCase())
       return matchCat && matchSearch
     })
-  }, [items, search, activeCategory])
+  }, [items, search, activeCategory, lang])
 
   return (
     <div className="page-bg">
@@ -76,7 +78,7 @@ export default function Menu() {
         </div>
 
         {loading && <SkeletonList count={6} />}
-        {error && <div className="menu-page__error">⚠️ {error}</div>}
+        {error && <div className="menu-page__error">⚠️ {translateError(new Error(error))}</div>}
 
         {!loading && !error && filtered.length === 0 && (
           <div className="menu-page__empty">
@@ -88,7 +90,7 @@ export default function Menu() {
         {!loading && !error && filtered.length > 0 && (
           <>
             <p className="menu-page__count">
-              Найдено: <strong>{filtered.length}</strong>
+              {t('found')} <strong>{filtered.length}</strong>
             </p>
             <div className="menu-page__grid">
               {filtered.map(item => (

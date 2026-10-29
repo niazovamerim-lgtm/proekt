@@ -17,15 +17,15 @@ export default function Favorites() {
         {favorites.length === 0 ? (
           <div className="menu-page__empty">
             <span>🤍</span>
-            <p>Сүйүктүүлөрдүн тизмеси бош</p>
+            <p>{t('favoriteListEmpty')}</p>
             <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>
-              Меню баракчасынан жүрөкчөнү басыңыз
+              {t('favoriteHint')}
             </p>
           </div>
         ) : (
           <>
             <p className="menu-page__count">
-              Сүйүктүүлөр: <strong>{favorites.length}</strong>
+              {t('favoritesCount')} <strong>{favorites.length}</strong>
             </p>
             <div className="menu-page__grid">
               {favorites.map(item => (

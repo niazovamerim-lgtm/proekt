@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
+import { useLang } from '../context/LangContext'
 import './Addresses.css'
 
 const addresses = [
-  { id: 1, label: 'Ул. Киевская, 123', city: 'Бишкек' },
-  { id: 2, label: 'Пр. Чуй, 45', city: 'Бишкек' },
-  { id: 3, label: 'Ул. Малая Садовая, 21', city: 'Бишкек' },
-  { id: 4, label: 'Ул. Кориолик, 25', city: 'Бишкек' },
-  { id: 5, label: 'Проспект Мира, 12', city: 'Бишкек' },
+  { id: 1, labelKey: 'addressKiev' },
+  { id: 2, labelKey: 'addressChui' },
+  { id: 3, labelKey: 'addressSadovaya' },
+  { id: 4, labelKey: 'addressKoriolik' },
+  { id: 5, labelKey: 'addressMira' },
 ]
 
 // Пин позициялары (карта заглушкасы үчүн %)
@@ -19,12 +20,13 @@ const pinPositions = [
 ]
 
 export default function Addresses() {
+  const { t } = useLang()
   const [active, setActive] = useState(1)
 
   return (
     <div className="page-bg">
       <div className="page-content">
-        <h1 className="page-title">Наши Адреса</h1>
+        <h1 className="page-title">{t('ourAddresses')}</h1>
         <div className="page-title-divider" />
 
         <div className="addresses__body">
@@ -37,7 +39,7 @@ export default function Addresses() {
                 onClick={() => setActive(addr.id)}
               >
                 <span className="addresses__pin-icon">📍</span>
-                {addr.label}
+                {t(addr.labelKey)}
               </li>
             ))}
           </ul>
@@ -45,7 +47,7 @@ export default function Addresses() {
           {/* Карта — интерактивная заглушка */}
           <div className="addresses__map-wrap">
             <div className="addresses__map-header">
-              <span className="addresses__map-badge">📍 Бишкек</span>
+              <span className="addresses__map-badge">📍 {t('cityBishkek')}</span>
             </div>
 
             <div className="addresses__map-canvas">
@@ -59,16 +61,16 @@ export default function Addresses() {
                   className={`addresses__map-pin${active === addr.id ? ' addresses__map-pin--active' : ''}`}
                   style={pinPositions[i]}
                   onClick={() => setActive(addr.id)}
-                  title={addr.label}
-                  aria-label={addr.label}
+                  title={t(addr.labelKey)}
+                  aria-label={t(addr.labelKey)}
                 >
                   <svg viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="addresses__pin-svg">
                     <path d="M12 0C5.373 0 0 5.373 0 12c0 9 12 20 12 20s12-11 12-20C24 5.373 18.627 0 12 0z"
-                      fill={active === addr.id ? '#c9a84c' : '#5a3e1b'} />
+                      fill={active === addr.id ? 'var(--color-gold)' : 'var(--color-gold-dim)'} />
                     <circle cx="12" cy="12" r="4" fill="white" />
                   </svg>
                   {active === addr.id && (
-                    <span className="addresses__pin-label">{addr.label}</span>
+                    <span className="addresses__pin-label">{t(addr.labelKey)}</span>
                   )}
                 </button>
               ))}
@@ -78,19 +80,19 @@ export default function Addresses() {
 
         {/* Выбранный адрес */}
         <div className="addresses__selected card">
-          <p className="addresses__selected-label">Выбранный адрес:</p>
+          <p className="addresses__selected-label">{t('selectedAddress')}</p>
           <p className="addresses__selected-value">
-            {addresses.find((a) => a.id === active)?.label}, {addresses.find((a) => a.id === active)?.city}
+            {t(addresses.find((a) => a.id === active).labelKey)}, {t('cityBishkek')}
           </p>
           <a
             href={`https://2gis.ru/bishkek/search/${encodeURIComponent(
-              addresses.find((a) => a.id === active)?.label + ' Бишкек' || ''
+              t(addresses.find((a) => a.id === active).labelKey) + ' ' + t('cityBishkek')
             )}`}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-gold addresses__btn"
           >
-            Открыть в 2GIS
+            {t('open2gis')}
           </a>
         </div>
       </div>

@@ -1,9 +1,11 @@
 .header {
   display: flex;
   flex-direction: column;
-  background-color: var(--color-bg-dark);
+  background-color: var(--color-nav-bg);
   position: relative;
   z-index: 100;
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: 0 8px 28px rgba(0,0,0,.2);
 }
 
 /* ---- Top row ---- */
@@ -11,11 +13,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 160px 10px;
+  padding: 17px 160px 13px;
   position: relative;
-  background: radial-gradient(ellipse at 50% 60%, rgba(180,120,30,0.25) 0%, transparent 65%),
-    var(--color-bg-dark);
-  min-height: 88px;
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(119,145,99,.12) 0%, transparent 58%),
+    var(--color-nav-bg);
+  min-height: 84px;
 }
 
 .header__logo {
@@ -26,20 +29,20 @@
 }
 
 .header__logo-text {
-  font-family: var(--font-heading);
-  font-size: clamp(2.4rem, 6vw, 4rem);
+  font-family: 'Great Vibes', cursive;
+  font-size: clamp(2.2rem, 4vw, 3rem);
   font-weight: 700;
   color: var(--color-cream);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.01em;
   line-height: 1;
-  text-shadow: 0 2px 20px rgba(201,168,76,0.3);
+  text-shadow: 0 2px 22px rgba(185,148,92,.18);
 }
 
 .header__logo-underline {
-  width: 100px;
-  height: 2px;
+  width: 80px;
+  height: 1px;
   background: linear-gradient(to right, transparent, var(--color-gold), transparent);
-  margin-top: 6px;
+  margin-top: 8px;
 }
 
 /* Controls */
@@ -56,11 +59,11 @@
 /* Cart button */
 .header__cart-btn {
   position: relative;
-  background: rgba(30,20,8,0.7);
+  background: rgba(255,255,255,.025);
   border: 1px solid var(--color-border);
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
+  border-radius: 2px;
+  width: 40px;
+  height: 40px;
   font-size: 1.1rem;
   display: flex;
   align-items: center;
@@ -70,8 +73,30 @@
   flex-shrink: 0;
 }
 
+.header__profile-btn {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  color: var(--color-cream);
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .2s, border-color .2s, color .2s;
+}
+
+.header__profile-btn:hover {
+  color: var(--color-gold-light);
+  background: rgba(185,148,92,.12);
+  border-color: var(--color-gold-dim);
+}
+
 .header__cart-btn:hover {
-  background: rgba(201,168,76,0.2);
+  background: rgba(185,148,92,.12);
 }
 
 .header__cart-badge {
@@ -99,7 +124,8 @@
   justify-content: center;
   flex-wrap: wrap;
   padding: 0 16px;
-  min-height: 52px;
+  min-height: 48px;
+  border-top: 1px solid rgba(199,169,112,.12);
   gap: 0;
 }
 
@@ -113,7 +139,7 @@
 
 .header__nav-link {
   display: block;
-  padding: 13px 12px;
+  padding: 13px 15px;
   font-family: var(--font-body);
   font-size: clamp(0.7rem, 1.1vw, 0.88rem);
   font-weight: 500;
@@ -123,19 +149,11 @@
 }
 
 .header__nav-link:hover {
-  color: var(--color-gold-dim);
+  color: var(--color-gold-light);
 }
 
 .header__nav-link--active {
-  background-color: #3a2d1a;
-  color: var(--color-cream) !important;
-}
-
-.header__book-btn {
-  margin-left: 12px;
-  padding: 9px 18px;
-  font-size: 0.8rem;
-  flex-shrink: 0;
+  color: var(--color-gold-light) !important;
 }
 
 /* ---- Burger ---- */
@@ -170,20 +188,26 @@
 
 /* ---- Light theme ---- */
 [data-theme="light"] .header {
-  background: #fff8ee;
+  background: #f5f4eb;
 }
 
 [data-theme="light"] .header__top {
-  background: linear-gradient(to bottom, #fff8ee, #fff0d5);
+  background: linear-gradient(to bottom, #f5f4eb, #ececdf);
 }
 
 [data-theme="light"] .header__logo-text {
-  color: #2c1f0f;
+  color: #17271e;
 }
 
 [data-theme="light"] .header__cart-btn {
-  background: rgba(255,240,200,0.8);
-  border-color: rgba(160,120,48,0.3);
+  background: rgba(75,91,67,.05);
+  border-color: rgba(95,105,75,.2);
+}
+
+[data-theme="light"] .header__profile-btn {
+  color: #17271e;
+  background: rgba(75,91,67,.05);
+  border-color: rgba(95,105,75,.2);
 }
 
 /* ---- Responsive ---- */
@@ -197,6 +221,16 @@
 }
 
 @media (max-width: 900px) {
+  .header__top {
+    justify-content: flex-start;
+    padding-left: 66px;
+    padding-right: 290px;
+  }
+
+  .header__logo-text {
+    font-size: clamp(1.8rem, 3vw, 2.2rem);
+  }
+
   .header__burger {
     display: flex;
   }
@@ -215,7 +249,7 @@
     left: 0;
     right: 0;
     z-index: 99;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.2);
     background-color: var(--color-nav-bg);
   }
 
@@ -232,18 +266,14 @@
     padding: 11px 8px;
     font-size: 1rem;
     width: 100%;
+    border-radius: 7px;
   }
 
-  .header__book-btn {
-    margin: 10px 0 0;
-    width: 100%;
-    text-align: center;
-  }
 }
 
 @media (max-width: 480px) {
   .header__logo-text { font-size: 1.8rem; }
-  .header__top { min-height: 68px; padding: 12px 110px 8px; }
+  .header__top { min-height: 68px; padding: 12px 100px 8px 58px; }
   .header__controls { gap: 4px; right: 48px; }
   .header__controls .lang-switcher { display: none; }
 }
