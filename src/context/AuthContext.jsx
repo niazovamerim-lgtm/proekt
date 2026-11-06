@@ -20,7 +20,9 @@ export function AuthProvider({ children }) {
     let active = true
     getCurrentAccount()
       .then(({ user: currentUser }) => {
-        if (active) setUser(currentUser)
+        if (active) {
+          setUser(currentUser)
+        }
       })
       .catch((requestError) => {
         if (!active) return

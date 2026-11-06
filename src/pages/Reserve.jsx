@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useLang } from '../context/LangContext'
 import { cancelReservation as cancelReservationRequest, createReservation } from '../services/api'
+import PhoneInput from '../components/PhoneInput'
 import './SimplePage.css'
 
 const STORAGE_KEY = 'restik-reservations'
@@ -27,6 +28,7 @@ export default function Reserve() {
   const [form, setForm] = useState({ date: '', time: '', guests: '', table: '', contact: '' })
   const [reservations, setReservations] = useState(loadReservations)
   const [message, setMessage] = useState('')
+  const [notificationWarning, setNotificationWarning] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
 
@@ -39,11 +41,13 @@ export default function Reserve() {
     event.preventDefault()
     setSaving(true)
     setError('')
+    setNotificationWarning(false)
     try {
-      const reservation = await createReservation({ ...form, guests: Number(form.guests) })
+      const reservation = await createReservation({ ...form, type: 'table', guests: Number(form.guests) })
       updateReservations([reservation, ...reservations])
       setForm({ date: '', time: '', guests: '', table: '', contact: '' })
       setMessage(t('bookingSuccess'))
+      setNotificationWarning(!reservation.telegramNotificationSent)
     } catch (requestError) {
       setError(translateError(requestError))
     } finally {
@@ -55,7 +59,9 @@ export default function Reserve() {
     setError('')
     try {
       if (reservation.manageToken) {
-        await cancelReservationRequest(reservation.id, reservation.manageToken)
+        await cancelReservationRequest(reservation.id, reservation.manageToken, reservation.source)
+      } else if (reservation.source === 'mockapi') {
+        await cancelReservationRequest(reservation.id, '', reservation.source)
       }
       updateReservations(reservations.filter(item => item.id !== reservation.id))
     } catch (requestError) {
@@ -69,10 +75,22 @@ export default function Reserve() {
         <h1 className="page-title">{t('booking')}</h1>
         <div className="page-title-divider" />
 
-        <div className="simple-page__booking-grid">
+        {message ? (
+          <section className="card simple-page__booking-confirmation" role="status">
+            <svg className="simple-page__booking-confirmation-icon" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <circle cx="24" cy="24" r="20" />
+              <path d="m15 24 6 6 12-13" />
+            </svg>
+            <h2>{message}</h2>
+            {notificationWarning && (
+              <p className="simple-page__error">{t('telegramReservationWarning')}</p>
+            )}
+          </section>
+        ) : (
+          <div className="simple-page__booking-grid">
           <section className="card simple-page__booking-card">
             <h2 className="section-heading">{t('makeBooking')}</h2>
-            {message && <p className="simple-page__success" role="status">{message}</p>}
+            {notificationWarning && <p className="simple-page__error" role="status">{t('telegramReservationWarning')}</p>}
             {error && <p className="simple-page__error" role="alert">{error}</p>}
             <form className="simple-page__auth-form" onSubmit={handleSubmit}>
               <div className="simple-page__auth-field">
@@ -106,7 +124,9 @@ export default function Reserve() {
               </div>
               <div className="simple-page__auth-field">
                 <label htmlFor="booking-contact">{t('bookingContact')}</label>
-                <input id="booking-contact" className="form-input" type="tel" value={form.contact} onChange={event => setForm({ ...form, contact: event.target.value })} placeholder="+996 ___-___-___" required />
+                <PhoneInput id="booking-contact" name="contact" value={form.contact}
+                  onChange={contact => setForm(current => ({ ...current, contact }))}
+                  required t={t} lang={lang} />
               </div>
               <button type="submit" className="btn-gold simple-page__auth-submit" disabled={saving}>{saving ? t('saving') : t('bookTable')}</button>
             </form>
@@ -139,7 +159,8 @@ export default function Reserve() {
               </ul>
             )}
           </section>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

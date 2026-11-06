@@ -16,7 +16,12 @@
 }
 
 .menu-page__search-icon {
-  font-size: 1rem;
+  width: 18px;
+  height: 18px;
+  stroke: var(--color-gold-light);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   margin-right: 10px;
   flex-shrink: 0;
 }

@@ -1,4 +1,5 @@
 import React from 'react'
+import { useLang } from '../context/LangContext'
 
 class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -20,13 +21,13 @@ class ErrorBoundary extends React.Component {
         <div className="error-boundary">
           <div className="error-boundary__inner">
             <span className="error-boundary__icon">⚠️</span>
-            <h2 className="error-boundary__title">Бир нерсе туура эмес болуп кетти</h2>
-            <p className="error-boundary__msg">{this.state.error?.message}</p>
+            <h2 className="error-boundary__title">{this.props.t('errorBoundaryTitle')}</h2>
+            <p className="error-boundary__msg">{this.props.t('errorBoundaryMessage')}</p>
             <button
               className="btn-gold"
               onClick={() => this.setState({ hasError: false, error: null })}
             >
-              Кайра аракет кыл
+              {this.props.t('retry')}
             </button>
           </div>
         </div>
@@ -36,4 +37,7 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-export default ErrorBoundary
+export default function LocalizedErrorBoundary(props) {
+  const { t } = useLang()
+  return <ErrorBoundary {...props} t={t} />
+}

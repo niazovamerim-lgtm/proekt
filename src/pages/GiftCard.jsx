@@ -25,7 +25,7 @@ export default function GiftCard() {
               <div className="simple-page__giftcard-logo">РЕСТИК</div>
               <div className="simple-page__giftcard-divider" />
               <p className="simple-page__giftcard-label">{t('giftCard')}</p>
-              <p className="simple-page__giftcard-amount">{finalAmount.toLocaleString('ru-RU')} KGS</p>
+              <p className="simple-page__giftcard-amount">{finalAmount.toLocaleString('ru-RU')} сом</p>
               {form.recipientName && (
                 <p className="simple-page__giftcard-recipient">{t('recipientPrefix')} {form.recipientName}</p>
               )}
@@ -47,7 +47,7 @@ export default function GiftCard() {
                   className={`simple-page__amount-btn${selected === a && !custom ? ' simple-page__amount-btn--active' : ''}`}
                   onClick={() => { setSelected(a); setCustom('') }}
                 >
-                  {a.toLocaleString('ru-RU')} ₸
+                  {a.toLocaleString('ru-RU')} сом
                 </button>
               ))}
             </div>
@@ -76,7 +76,7 @@ export default function GiftCard() {
               className="form-input" style={{ marginBottom: '16px' }} />
 
             <button className="btn-gold simple-page__btn">
-              {t('buyCard')} {finalAmount.toLocaleString('ru-RU')} KGS
+              {t('buyCard')} {finalAmount.toLocaleString('ru-RU')} сом
             </button>
           </div>
         </div>

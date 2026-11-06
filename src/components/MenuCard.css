@@ -1,4 +1,4 @@
-.menu-card {
+пост.menu-card {
   background: var(--color-card-bg);
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -35,26 +35,44 @@
   position: absolute;
   top: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.45);
-  border: none;
-  border-radius: 10px;
-  width: 34px;
-  height: 34px;
-  font-size: 1.1rem;
+  background: rgba(7, 26, 19, 0.78);
+  border: 1px solid rgba(255, 250, 240, 0.18);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, background 0.2s;
+  color: rgba(255, 250, 240, 0.9);
+  transition: transform 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+  backdrop-filter: blur(6px);
 }
 
 .menu-card__fav:hover {
-  transform: scale(1.2);
-  background: rgba(0,0,0,0.65);
+  transform: scale(1.08);
+  background: rgba(7, 26, 19, 0.95);
+  border-color: var(--color-gold);
+}
+
+.menu-card__fav-icon {
+  width: 19px;
+  height: 19px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
 }
 
 .menu-card__fav--active {
-  background: rgba(200,50,50,0.3);
+  color: #e88982;
+  border-color: rgba(232, 137, 130, 0.6);
+  background: rgba(7, 26, 19, 0.9);
+}
+
+.menu-card__fav--active .menu-card__fav-icon {
+  transform: scale(1.08);
 }
 
 .menu-card__body {

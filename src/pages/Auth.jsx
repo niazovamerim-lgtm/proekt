@@ -2,11 +2,12 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import PhoneInput from '../components/PhoneInput'
 import './SimplePage.css'
 
 export default function Auth() {
   const { login, register, error: sessionError } = useAuth()
-  const { t, translateError } = useLang()
+  const { t, lang, translateError } = useLang()
   const navigate = useNavigate()
   const [mode, setMode] = useState('login') // 'login' | 'register'
   const [form, setForm] = useState({ name: '', email: '', phone: '', password: '', confirm: '' })
@@ -92,8 +93,9 @@ export default function Auth() {
             {mode === 'register' && (
               <div className="simple-page__auth-field">
                 <label>{t('phone')}</label>
-                <input type="tel" name="phone" value={form.phone} onChange={handleChange}
-                  placeholder="+996 ___-___-___" className="form-input" />
+                <PhoneInput id="register-phone" name="phone" value={form.phone}
+                  onChange={phone => setForm(current => ({ ...current, phone }))}
+                  t={t} lang={lang} />
               </div>
             )}
 

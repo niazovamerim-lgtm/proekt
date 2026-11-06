@@ -33,7 +33,7 @@ export default function AdminLogin() {
         <div className="adm-login-languages"><LangSwitcher /></div>
         <div className="adm-login-brand">
           <span className="adm-login-brand__icon" aria-hidden="true">✳</span>
-          <span>Рестик <span>Admin</span></span>
+          <span>Рестик <span>{t('adminBrandSuffix')}</span></span>
         </div>
         <p className="adm-login-eyebrow">{t('adminPanelEyebrow')}</p>
         <h1 className="adm-login-title">{t('adminLoginTitle')}</h1>

@@ -47,15 +47,23 @@ export default function MenuCard({ item }) {
           className={`menu-card__fav ${fav ? 'menu-card__fav--active' : ''}`}
           onClick={() => toggle(localizedItem)}
           aria-label={t('addToFavorites')}
+          aria-pressed={fav}
         >
-          {fav ? '❤️' : '🤍'}
+          <svg
+            className="menu-card__fav-icon"
+            viewBox="0 0 24 24"
+            fill={fav ? 'currentColor' : 'none'}
+            aria-hidden="true"
+          >
+            <path d="M20.8 8.8c0 5.2-8.8 11-8.8 11s-8.8-5.8-8.8-11a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z" />
+          </svg>
         </button>
       </div>
       <div className="menu-card__body">
         <h3 className="menu-card__name">{name}</h3>
         <p className="menu-card__desc">{desc}</p>
         <div className="menu-card__footer">
-          <span className="menu-card__price">{item.price} KGS</span>
+          <span className="menu-card__price">{item.price} сом</span>
           <button
             className={inCart ? 'btn-dark menu-card__btn' : 'btn-gold menu-card__btn'}
             onClick={() => addItem(localizedItem)}

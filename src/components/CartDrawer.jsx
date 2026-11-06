@@ -61,7 +61,7 @@ export default function CartDrawer({ open, onClose }) {
                   <img src={item.img} alt={localizedName(item)} className="cart-drawer__img" loading="lazy" decoding="async" />
                   <div className="cart-drawer__info">
                     <p className="cart-drawer__name">{localizedName(item)}</p>
-                    <p className="cart-drawer__price">{item.price} KGS</p>
+                    <p className="cart-drawer__price">{item.price} сом</p>
                   </div>
                   <div className="cart-drawer__qty">
                     <button onClick={() => updateQty(item.id, item.qty - 1)}>−</button>
@@ -80,7 +80,7 @@ export default function CartDrawer({ open, onClose }) {
             {orderError && <p className="cart-drawer__error">{orderError}</p>}
             <div className="cart-drawer__total">
               <span>{t('total')}:</span>
-              <span className="cart-drawer__total-sum">{total.toLocaleString('ru-RU')} KGS</span>
+              <span className="cart-drawer__total-sum">{total.toLocaleString('ru-RU')} сом</span>
             </div>
             <button
               className="btn-gold cart-drawer__order"

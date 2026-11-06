@@ -74,13 +74,27 @@ export default function Reviews() {
                 className="form-input"
                 required
               />
-              <select
-                value={form.rating}
-                onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
-                className="form-input"
-              >
-                {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ★</option>)}
-              </select>
+              <fieldset className="simple-page__rating">
+                <legend>{t('reviewRating')}</legend>
+                <div className="simple-page__rating-stars">
+                  {[1, 2, 3, 4, 5].map(rating => (
+                    <label
+                      key={rating}
+                      className={rating <= form.rating ? 'is-selected' : ''}
+                      title={`${rating} / 5`}
+                    >
+                      <input
+                        type="radio"
+                        name="review-rating"
+                        value={rating}
+                        checked={form.rating === rating}
+                        onChange={() => setForm({ ...form, rating })}
+                      />
+                      <span aria-hidden="true">★</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </div>
             <textarea
               placeholder={t('tellVisit')}

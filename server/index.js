@@ -1,5 +1,5 @@
 import { createServer } from 'node:http'
-import { createReadStream, existsSync, mkdirSync } from 'node:fs'
+import { mkdirSync } from 'node:fs'
 import { extname, resolve, sep } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import {
@@ -8,13 +8,16 @@ import {
   scryptSync,
   timingSafeEqual,
 } from 'node:crypto'
+import { isValidPhoneNumber } from 'libphonenumber-js/max'
 
+const IS_PRODUCTION = process.env.NODE_ENV === 'production'
 const PORT = Number(process.env.PORT || 3001)
-const ADMIN_LOGIN = process.env.ADMIN_LOGIN || process.env.VITE_ADMIN_LOGIN || ''
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || process.env.VITE_ADMIN_PASSWORD || ''
+const ADMIN_LOGIN = process.env.ADMIN_LOGIN?.trim() || process.env.VITE_ADMIN_LOGIN?.trim() || 'admin'
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD?.trim() || process.env.VITE_ADMIN_PASSWORD?.trim() || 'adminpass'
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ''
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID || ''
-const IS_PRODUCTION = process.env.NODE_ENV === 'production'
+const RESERVATIONS_URL = 'https://6ae5cbae877d34ccafc2713a.mockapi.io/Reserve'
+const PROFILES_URL = 'https://6ae5cbae877d34ccafc2713a.mockapi.io/Profile'
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_BODY_BYTES = 16 * 1024
 const MIME_TYPES = {
@@ -28,10 +31,6 @@ const MIME_TYPES = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
-}
-
-if (!ADMIN_LOGIN || !ADMIN_PASSWORD) {
-  throw new Error('ADMIN_LOGIN and ADMIN_PASSWORD must be configured')
 }
 
 const dataDirectory = resolve(process.env.DATA_DIR || './data')
@@ -96,6 +95,18 @@ database.exec(`
     duration_en TEXT NOT NULL DEFAULT '',
     created_at INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS catering_packages (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    title_kg TEXT NOT NULL DEFAULT '',
+    title_en TEXT NOT NULL DEFAULT '',
+    guests TEXT NOT NULL,
+    guests_kg TEXT NOT NULL DEFAULT '',
+    guests_en TEXT NOT NULL DEFAULT '',
+    price INTEGER NOT NULL,
+    features_json TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
   CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
   CREATE INDEX IF NOT EXISTS users_created_at_idx ON users(created_at DESC);
   CREATE INDEX IF NOT EXISTS orders_created_at_idx ON orders(created_at DESC);
@@ -103,6 +114,71 @@ database.exec(`
   CREATE INDEX IF NOT EXISTS reviews_created_at_idx ON reviews(created_at DESC);
 `)
 database.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now())
+
+const initialCateringPackages = [
+  {
+    title: 'Базовый',
+    titleKg: 'Баштапкы',
+    titleEn: 'Basic',
+    guests: 'до 20 чел.',
+    guestsKg: '20 конокко чейин',
+    guestsEn: 'up to 20 guests',
+    price: 15000,
+    features: {
+      ru: ['Холодные закуски', 'Горячие блюда', 'Напитки', 'Сервировка'],
+      kg: ['Муздак закускалар', 'Ысык тамактар', 'Суусундуктар', 'Дасторкон жасалгасы'],
+      en: ['Cold appetizers', 'Hot dishes', 'Drinks', 'Table setting'],
+    },
+  },
+  {
+    title: 'Стандарт',
+    titleKg: 'Стандарт',
+    titleEn: 'Standard',
+    guests: 'до 50 чел.',
+    guestsKg: '50 конокко чейин',
+    guestsEn: 'up to 50 guests',
+    price: 35000,
+    features: {
+      ru: ['Всё из Базового', 'Десерты', 'Торт на заказ', 'Официанты'],
+      kg: ['Баштапкы топтомдун баары', 'Десерттер', 'Буйрутма торт', 'Официанттар'],
+      en: ['Everything in Basic', 'Desserts', 'Custom cake', 'Waiters'],
+    },
+  },
+  {
+    title: 'Премиум',
+    titleKg: 'Премиум',
+    titleEn: 'Premium',
+    guests: 'до 150 чел.',
+    guestsKg: '150 конокко чейин',
+    guestsEn: 'up to 150 guests',
+    price: 80000,
+    features: {
+      ru: ['Всё из Стандарт', 'Десерты', 'Торт на заказ', 'VIP сервис'],
+      kg: ['Стандарт топтомунун баары', 'Десерттер', 'Буйрутма торт', 'VIP тейлөө'],
+      en: ['Everything in Standard', 'Desserts', 'Custom cake', 'VIP service'],
+    },
+  },
+]
+if (database.prepare('SELECT COUNT(*) AS count FROM catering_packages').get().count === 0) {
+  const insertCateringPackage = database.prepare(`
+    INSERT INTO catering_packages (
+      title, title_kg, title_en, guests, guests_kg, guests_en, price, features_json, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `)
+  for (const cateringPackage of initialCateringPackages) {
+    insertCateringPackage.run(
+      cateringPackage.title,
+      cateringPackage.titleKg,
+      cateringPackage.titleEn,
+      cateringPackage.guests,
+      cateringPackage.guestsKg,
+      cateringPackage.guestsEn,
+      cateringPackage.price,
+      JSON.stringify(cateringPackage.features),
+      Date.now(),
+    )
+  }
+}
 
 const initialMasterClasses = [
   {
@@ -291,6 +367,42 @@ function publicUser(user) {
   }
 }
 
+async function syncProfileToMockApi(user) {
+  const profile = {
+    name: user.name,
+    email: user.email,
+    phone: user.phone || '',
+    createdAt: new Date(Number(user.createdAt) || Date.now()).toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  try {
+    const lookupUrl = new URL(PROFILES_URL)
+    lookupUrl.searchParams.set('email', profile.email)
+    const lookup = await fetch(lookupUrl, { signal: AbortSignal.timeout(8000) })
+    if (!lookup.ok) throw new Error(`profile lookup returned HTTP ${lookup.status}`)
+    const profiles = await lookup.json()
+    if (!Array.isArray(profiles)) throw new Error('profile lookup returned an invalid response')
+
+    const existing = profiles.find(item => (
+      typeof item.email === 'string' && item.email.toLowerCase() === profile.email.toLowerCase()
+    ))
+    const response = await fetch(existing
+      ? `${PROFILES_URL}/${encodeURIComponent(existing.id)}`
+      : PROFILES_URL, {
+      method: existing ? 'PATCH' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!response.ok) throw new Error(`profile save returned HTTP ${response.status}`)
+    return true
+  } catch (error) {
+    console.error('MockAPI profile sync failed:', error.message)
+    return false
+  }
+}
+
 function publicMasterClass(masterClass) {
   return {
     id: masterClass.id,
@@ -307,6 +419,47 @@ function publicMasterClass(masterClass) {
     img: masterClass.img,
     createdAt: masterClass.created_at,
   }
+}
+
+function publicCateringPackage(cateringPackage) {
+  return {
+    id: cateringPackage.id,
+    title: cateringPackage.title,
+    titleKg: cateringPackage.title_kg,
+    titleEn: cateringPackage.title_en,
+    guests: cateringPackage.guests,
+    guestsKg: cateringPackage.guests_kg,
+    guestsEn: cateringPackage.guests_en,
+    price: cateringPackage.price,
+    features: JSON.parse(cateringPackage.features_json),
+  }
+}
+
+function validateCateringPackage(body) {
+  const title = cleanText(body.title, 120)
+  const titleKg = cleanText(body.titleKg, 120)
+  const titleEn = cleanText(body.titleEn, 120)
+  const guests = cleanText(body.guests, 80)
+  const guestsKg = cleanText(body.guestsKg, 80)
+  const guestsEn = cleanText(body.guestsEn, 80)
+  const price = Number(body.price)
+  const features = {}
+
+  if (title.length < 2) throw new HttpError(400, 'Укажите название кейтеринг-пакета')
+  if (!guests) throw new HttpError(400, 'Укажите количество гостей')
+  if (!Number.isSafeInteger(price) || price < 0 || price > 100000000) {
+    throw new HttpError(400, 'Укажите корректную стоимость')
+  }
+  for (const language of ['ru', 'kg', 'en']) {
+    const values = body.features?.[language]
+    if (!Array.isArray(values) || values.length > 20) {
+      throw new HttpError(400, 'Проверьте список услуг')
+    }
+    features[language] = values
+      .map(value => cleanText(value, 160))
+      .filter(Boolean)
+  }
+  return { title, titleKg, titleEn, guests, guestsKg, guestsEn, price, features }
 }
 
 function validateMasterClass(body) {
@@ -413,22 +566,22 @@ function cleanText(value, maxLength) {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 }
 
+function validatePhone(value, required = false) {
+  const phone = cleanText(value, 40)
+  if (!phone && !required) return ''
+  if (!phone) throw new HttpError(400, 'Укажите контактный телефон')
+  if (!isValidPhoneNumber(phone)) throw new HttpError(400, 'Укажите корректный номер телефона')
+  return phone
+}
+
 function validatePassword(password) {
   if (typeof password !== 'string' || password.length < 8 || password.length > 256) {
     throw new HttpError(400, 'Пароль должен содержать от 8 до 256 символов')
   }
 }
 
-async function notifyTelegram(user) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return
-  const message = [
-    'Новая регистрация на сайте Рестик',
-    `Имя: ${user.name}`,
-    `Email: ${user.email}`,
-    `Телефон: ${user.phone || 'не указан'}`,
-    `Дата: ${new Date(user.createdAt).toLocaleString('ru-RU', { timeZone: 'Asia/Bishkek' })}`,
-  ].join('\n')
-
+async function sendTelegramMessage(message, context) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return false
   try {
     const result = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
@@ -436,12 +589,45 @@ async function notifyTelegram(user) {
       body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message }),
       signal: AbortSignal.timeout(5000),
     })
-    if (!result.ok) {
-      console.error(`Telegram registration notification failed with status ${result.status}`)
+    const payload = await result.json()
+    if (!result.ok || !payload.ok) {
+      console.error(`Telegram ${context} notification failed with status ${result.status}: ${payload.description || 'unknown error'}`)
+      return false
     }
+    return true
   } catch (error) {
-    console.error('Telegram registration notification failed:', error.message)
+    console.error(`Telegram ${context} notification failed:`, error.message)
+    return false
   }
+}
+
+async function notifyTelegram(user) {
+  const message = [
+    'Новая регистрация на сайте Рестик',
+    `Имя: ${user.name}`,
+    `Email: ${user.email}`,
+    `Телефон: ${user.phone || 'не указан'}`,
+    `Дата: ${new Date(user.createdAt).toLocaleString('ru-RU', { timeZone: 'Asia/Bishkek' })}`,
+  ].join('\n')
+  return sendTelegramMessage(message, 'registration')
+}
+
+async function notifyReservation(reservation) {
+  const tableNames = {
+    window: 'у окна',
+    center: 'в центре',
+    corner: 'в углу',
+    vip: 'VIP кабинет',
+  }
+  const message = [
+    'Новая бронь столика на сайте Рестик',
+    `Дата: ${reservation.date}`,
+    `Время: ${reservation.time}`,
+    `Гостей: ${reservation.guests}`,
+    `Столик: ${tableNames[reservation.table] || 'не выбран'}`,
+    `Телефон: ${reservation.contact}`,
+  ].join('\n')
+  return sendTelegramMessage(message, 'reservation')
 }
 
 async function handleApi(request, response, pathname) {
@@ -470,6 +656,77 @@ async function handleApi(request, response, pathname) {
     })
   }
 
+  if (request.method === 'POST' && pathname === '/api/mockapi-reservations') {
+    enforceRateLimit(request, 'reservations', 20)
+    const body = await readJson(request)
+    if (body.type === 'catering') {
+      const packageTitle = cleanText(body.packageTitle, 120)
+      const guests = cleanText(body.guests, 80)
+      const name = cleanText(body.name, 120)
+      const contact = validatePhone(body.contact, true)
+      if (packageTitle.length < 2 || !guests || name.length < 2) {
+        throw new HttpError(400, 'Проверьте данные заявки на кейтеринг')
+      }
+      const payload = {
+        type: 'catering',
+        packageId: cleanText(String(body.packageId ?? ''), 80),
+        packageTitle,
+        guests,
+        name,
+        contact,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      }
+      const result = await fetch(RESERVATIONS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(8000),
+      })
+      if (!result.ok) throw new HttpError(502, 'Не удалось сохранить заявку в MockAPI')
+      return sendJson(response, 201, { ...await result.json(), source: 'mockapi' })
+    }
+
+    const date = cleanText(body.date, 10)
+    const time = cleanText(body.time, 5)
+    const guests = Number(body.guests)
+    const table = cleanText(body.table, 40)
+    const contact = validatePhone(body.contact, true)
+    const parsedDate = new Date(`${date}T00:00:00Z`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
+      throw new HttpError(400, 'Укажите корректную дату бронирования')
+    }
+    if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(400, 'Укажите корректное время')
+    if (!Number.isInteger(guests) || guests < 1 || guests > 30) throw new HttpError(400, 'Проверьте количество гостей')
+    if (table && !['window', 'center', 'corner', 'vip'].includes(table)) {
+      throw new HttpError(400, 'Выберите корректный столик')
+    }
+    const reservationData = {
+      type: 'table',
+      date,
+      time,
+      guests,
+      table,
+      contact,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+    }
+    const result = await fetch(RESERVATIONS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reservationData),
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!result.ok) throw new HttpError(502, 'Не удалось сохранить бронирование в MockAPI')
+    const reservation = await result.json()
+    const telegramNotificationSent = await notifyReservation(reservationData)
+    return sendJson(response, 201, {
+      ...reservation,
+      source: 'mockapi',
+      telegramNotificationSent,
+    })
+  }
+
   if (request.method === 'POST' && pathname === '/api/reservations') {
     enforceRateLimit(request, 'reservations', 20)
     const body = await readJson(request)
@@ -477,14 +734,13 @@ async function handleApi(request, response, pathname) {
     const time = cleanText(body.time, 5)
     const guests = Number(body.guests)
     const table = cleanText(body.table, 40)
-    const contact = cleanText(body.contact, 80)
+    const contact = validatePhone(body.contact, true)
     const parsedDate = new Date(`${date}T00:00:00Z`)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== date) {
       throw new HttpError(400, 'Укажите корректную дату бронирования')
     }
     if (!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new HttpError(400, 'Укажите корректное время')
     if (!Number.isInteger(guests) || guests < 1 || guests > 30) throw new HttpError(400, 'Проверьте количество гостей')
-    if (!contact) throw new HttpError(400, 'Укажите контактный телефон')
     const manageToken = randomBytes(32).toString('base64url')
     const createdAt = Date.now()
     const inserted = database.prepare(`
@@ -492,7 +748,11 @@ async function handleApi(request, response, pathname) {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(date, time, guests, table, contact, createHash('sha256').update(manageToken).digest('hex'), createdAt)
     const reservation = database.prepare('SELECT * FROM reservations WHERE id = ?').get(Number(inserted.lastInsertRowid))
-    return sendJson(response, 201, publicReservation({ ...reservation, manageToken }, true))
+    const telegramNotificationSent = await notifyReservation({ date, time, guests, table, contact })
+    return sendJson(response, 201, {
+      ...publicReservation({ ...reservation, manageToken }, true),
+      telegramNotificationSent,
+    })
   }
 
   if (request.method === 'DELETE' && /^\/api\/reservations\/\d+$/.test(pathname)) {
@@ -536,12 +796,17 @@ async function handleApi(request, response, pathname) {
     return sendJson(response, 200, classes.map(publicMasterClass))
   }
 
+  if (request.method === 'GET' && pathname === '/api/catering-packages') {
+    const packages = database.prepare('SELECT * FROM catering_packages ORDER BY id').all()
+    return sendJson(response, 200, packages.map(publicCateringPackage))
+  }
+
   if (request.method === 'POST' && pathname === '/api/auth/register') {
     enforceRateLimit(request, 'register', 6)
     const body = await readJson(request)
     const name = cleanText(body.name, 100)
     const email = cleanText(body.email, 254).toLowerCase()
-    const phone = cleanText(body.phone, 40)
+    const phone = validatePhone(body.phone)
     const password = body.password
     if (name.length < 2) throw new HttpError(400, 'Имя должно содержать не менее 2 символов')
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new HttpError(400, 'Укажите корректный email')
@@ -562,7 +827,8 @@ async function handleApi(request, response, pathname) {
     const user = publicUser({ id: Number(inserted.lastInsertRowid), name, email, phone, createdAt })
     createSession(response, { userId: user.id })
     void notifyTelegram(user)
-    return sendJson(response, 201, { user })
+    const profileSynced = await syncProfileToMockApi(user)
+    return sendJson(response, 201, { user, profileSynced })
   }
 
   if (request.method === 'POST' && pathname === '/api/auth/login') {
@@ -575,8 +841,11 @@ async function handleApi(request, response, pathname) {
       throw new HttpError(401, 'Email или пароль указаны неверно')
     }
     createSession(response, { userId: user.id })
+    const account = publicUser({ ...user, createdAt: user.created_at })
+    const profileSynced = await syncProfileToMockApi(account)
     return sendJson(response, 200, {
-      user: publicUser({ ...user, createdAt: user.created_at }),
+      user: account,
+      profileSynced,
     })
   }
 
@@ -585,14 +854,16 @@ async function handleApi(request, response, pathname) {
     if (!session || session.isAdmin || !session.userId) {
       throw new HttpError(401, 'Войдите в аккаунт')
     }
-    return sendJson(response, 200, { user: publicUser({ ...session, id: session.userId }) })
+    const user = publicUser({ ...session, id: session.userId })
+    const profileSynced = await syncProfileToMockApi(user)
+    return sendJson(response, 200, { user, profileSynced })
   }
 
   if (request.method === 'PATCH' && pathname === '/api/auth/profile') {
     const session = requireUser(request)
     const body = await readJson(request)
     const name = cleanText(body.name, 100)
-    const phone = cleanText(body.phone, 40)
+    const phone = validatePhone(body.phone)
     if (name.length < 2) throw new HttpError(400, 'Имя должно содержать не менее 2 символов')
 
     if (body.newPassword) {
@@ -611,7 +882,9 @@ async function handleApi(request, response, pathname) {
     const updated = database.prepare(`
       SELECT id, name, email, phone, created_at AS createdAt FROM users WHERE id = ?
     `).get(session.userId)
-    return sendJson(response, 200, { user: publicUser(updated) })
+    const user = publicUser(updated)
+    const profileSynced = await syncProfileToMockApi(user)
+    return sendJson(response, 200, { user, profileSynced })
   }
 
   if (request.method === 'POST' && pathname === '/api/auth/logout') {
@@ -687,6 +960,62 @@ async function handleApi(request, response, pathname) {
     const id = Number(pathname.split('/').pop())
     const result = database.prepare('DELETE FROM reviews WHERE id = ?').run(id)
     if (result.changes === 0) throw new HttpError(404, 'Отзыв не найден')
+    return sendJson(response, 200, { ok: true })
+  }
+
+  if (request.method === 'POST' && pathname === '/api/admin/catering-packages') {
+    requireAdmin(request)
+    const cateringPackage = validateCateringPackage(await readJson(request))
+    const inserted = database.prepare(`
+      INSERT INTO catering_packages (
+        title, title_kg, title_en, guests, guests_kg, guests_en, price, features_json, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      cateringPackage.title,
+      cateringPackage.titleKg,
+      cateringPackage.titleEn,
+      cateringPackage.guests,
+      cateringPackage.guestsKg,
+      cateringPackage.guestsEn,
+      cateringPackage.price,
+      JSON.stringify(cateringPackage.features),
+      Date.now(),
+    )
+    const created = database.prepare('SELECT * FROM catering_packages WHERE id = ?')
+      .get(Number(inserted.lastInsertRowid))
+    return sendJson(response, 201, publicCateringPackage(created))
+  }
+
+  if (request.method === 'PATCH' && /^\/api\/admin\/catering-packages\/\d+$/.test(pathname)) {
+    requireAdmin(request)
+    const id = Number(pathname.split('/').pop())
+    const cateringPackage = validateCateringPackage(await readJson(request))
+    const result = database.prepare(`
+      UPDATE catering_packages SET
+        title = ?, title_kg = ?, title_en = ?, guests = ?, guests_kg = ?, guests_en = ?,
+        price = ?, features_json = ?
+      WHERE id = ?
+    `).run(
+      cateringPackage.title,
+      cateringPackage.titleKg,
+      cateringPackage.titleEn,
+      cateringPackage.guests,
+      cateringPackage.guestsKg,
+      cateringPackage.guestsEn,
+      cateringPackage.price,
+      JSON.stringify(cateringPackage.features),
+      id,
+    )
+    if (result.changes === 0) throw new HttpError(404, 'Кейтеринг-пакет не найден')
+    const updated = database.prepare('SELECT * FROM catering_packages WHERE id = ?').get(id)
+    return sendJson(response, 200, publicCateringPackage(updated))
+  }
+
+  if (request.method === 'DELETE' && /^\/api\/admin\/catering-packages\/\d+$/.test(pathname)) {
+    requireAdmin(request)
+    const id = Number(pathname.split('/').pop())
+    const result = database.prepare('DELETE FROM catering_packages WHERE id = ?').run(id)
+    if (result.changes === 0) throw new HttpError(404, 'Кейтеринг-пакет не найден')
     return sendJson(response, 200, { ok: true })
   }
 

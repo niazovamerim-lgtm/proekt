@@ -164,6 +164,59 @@
   width: 100px;
 }
 
+.simple-page__rating {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 140px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.simple-page__rating legend {
+  padding: 0 4px;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.simple-page__rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.simple-page__rating-stars label {
+  position: relative;
+  color: rgba(201, 168, 76, .35);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color .15s ease, transform .15s ease;
+}
+
+.simple-page__rating-stars label.is-selected {
+  color: var(--color-gold);
+}
+
+.simple-page__rating-stars label:hover {
+  transform: scale(1.12);
+}
+
+.simple-page__rating-stars input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.simple-page__rating-stars input:focus-visible + span {
+  outline: 2px solid var(--color-gold-light);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
 .simple-page__textarea {
   resize: vertical;
   min-height: 80px;
@@ -520,6 +573,36 @@
 .simple-page__booking-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
 .simple-page__booking-card { min-width: 0; }
 .simple-page__booking-card .section-heading { margin-bottom: 20px; }
+.simple-page__booking-confirmation {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  width: min(100%, 620px);
+  margin: 48px auto;
+  padding: 38px 28px;
+  text-align: center;
+}
+.simple-page__booking-confirmation-icon {
+  width: 58px;
+  height: 58px;
+  stroke: #7ed97e;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.simple-page__booking-confirmation-icon circle {
+  stroke: rgba(126, 217, 126, 0.45);
+}
+.simple-page__booking-confirmation h2 {
+  color: var(--color-cream);
+  font-family: var(--font-heading);
+  font-size: clamp(1.35rem, 3vw, 1.8rem);
+}
+.simple-page__booking-confirmation .simple-page__error {
+  margin: 0;
+  text-align: left;
+}
 .simple-page__booking-empty { padding: 24px 0; color: var(--color-text-muted); text-align: center; }
 .simple-page__booking-list { display: grid; gap: 14px; list-style: none; }
 .simple-page__booking-item { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--color-border); }

@@ -2,11 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLang } from '../context/LangContext'
+import PhoneInput from '../components/PhoneInput'
 import './SimplePage.css'
 
 export default function Profile() {
   const { user, loading, error: sessionError, updateProfile, logout } = useAuth()
-  const { t, translateError } = useLang()
+  const { t, lang, translateError } = useLang()
   const navigate = useNavigate()
   const [form, setForm] = useState({ name: '', phone: '', currentPassword: '', newPassword: '' })
   const [message, setMessage] = useState('')
@@ -79,7 +80,6 @@ export default function Profile() {
             </div>
           </div>
 
-          {(error || sessionError) && <p className="simple-page__error" role="alert">{error || sessionError}</p>}
           {message && <p className="simple-page__success" role="status">{message}</p>}
 
           <form className="simple-page__auth-form" onSubmit={handleSubmit}>
@@ -93,7 +93,9 @@ export default function Profile() {
             </div>
             <div className="simple-page__auth-field">
               <label htmlFor="profile-phone">{t('phone')}</label>
-              <input id="profile-phone" className="form-input" type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+996 ___-___-___" />
+              <PhoneInput id="profile-phone" name="phone" value={form.phone}
+                onChange={phone => setForm(current => ({ ...current, phone }))}
+                t={t} lang={lang} />
             </div>
 
             <div className="simple-page__profile-password">

@@ -52,7 +52,10 @@ export default function Menu() {
         <div className="page-title-divider" />
 
         <div className="menu-page__search-wrap">
-          <span className="menu-page__search-icon">🔍</span>
+          <svg className="menu-page__search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="10.8" cy="10.8" r="6.8" />
+            <path d="m16 16 4.5 4.5" />
+          </svg>
           <input
             type="text"
             className="menu-page__search"

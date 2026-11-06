@@ -7,6 +7,7 @@ import {
   getOrders, deleteOrder, getAdminUsers,
   getAdminReservations, updateAdminReservation, getAdminReviews, deleteAdminReview,
   getMasterClasses, createMasterClass, updateMasterClass, deleteMasterClass,
+  getCateringPackages, createCateringPackage, updateCateringPackage, deleteCateringPackage,
 } from '../../services/api'
 import './Admin.css'
 import LangSwitcher from '../../components/LangSwitcher'
@@ -16,9 +17,51 @@ const EMPTY_MASTER_CLASS = {
   title: '', titleKg: '', titleEn: '', date: '', time: '', duration: '', durationKg: '',
   durationEn: '', price: '', seats: '', img: '',
 }
+const EMPTY_CATERING_PACKAGE = {
+  title: '', titleKg: '', titleEn: '', guests: '', guestsKg: '', guestsEn: '',
+  price: '', featuresRu: '', featuresKg: '', featuresEn: '',
+}
+
+function cateringPackageForm(item = EMPTY_CATERING_PACKAGE) {
+  return {
+    title: item.title || '',
+    titleKg: item.titleKg || '',
+    titleEn: item.titleEn || '',
+    guests: item.guests || '',
+    guestsKg: item.guestsKg || '',
+    guestsEn: item.guestsEn || '',
+    price: String(item.price ?? ''),
+    featuresRu: (item.features?.ru || []).join('\n'),
+    featuresKg: (item.features?.kg || []).join('\n'),
+    featuresEn: (item.features?.en || []).join('\n'),
+  }
+}
+
+function cateringPackagePayload(form) {
+  return {
+    title: form.title,
+    titleKg: form.titleKg,
+    titleEn: form.titleEn,
+    guests: form.guests,
+    guestsKg: form.guestsKg,
+    guestsEn: form.guestsEn,
+    price: Number(form.price),
+    features: {
+      ru: form.featuresRu.split('\n').map(feature => feature.trim()).filter(Boolean),
+      kg: form.featuresKg.split('\n').map(feature => feature.trim()).filter(Boolean),
+      en: form.featuresEn.split('\n').map(feature => feature.trim()).filter(Boolean),
+    },
+  }
+}
 
 const CATEGORY_ICONS = { hot: '🔥', cold: '🧊', dessert: '🍰', drink: '🥤' }
 const CATEGORY_LABEL_KEYS = { hot: 'categoryHot', cold: 'categoryCold', dessert: 'categoryDessert', drink: 'categoryDrink' }
+const ORDER_STATUS_KEYS = {
+  new: 'adminNewOrder',
+  confirmed: 'statusConfirmed',
+  cancelled: 'statusCancelled',
+  pending: 'statusPending',
+}
 
 export default function AdminPanel() {
   const { logout } = useAdmin()
@@ -47,6 +90,13 @@ export default function AdminPanel() {
   const [masterClassEditSource, setMasterClassEditSource] = useState('mockapi')
   const [masterClassFormOpen, setMasterClassFormOpen] = useState(false)
   const [masterClassSaving, setMasterClassSaving] = useState(false)
+  const [cateringPackages, setCateringPackages] = useState([])
+  const [cateringLoading, setCateringLoading] = useState(false)
+  const [cateringError, setCateringError] = useState('')
+  const [cateringForm, setCateringForm] = useState(EMPTY_CATERING_PACKAGE)
+  const [cateringEditId, setCateringEditId] = useState(null)
+  const [cateringFormOpen, setCateringFormOpen] = useState(false)
+  const [cateringSaving, setCateringSaving] = useState(false)
   const [reservations, setReservations] = useState([])
   const [reservationsLoading, setReservationsLoading] = useState(false)
   const [reservationsError, setReservationsError] = useState('')
@@ -113,6 +163,14 @@ export default function AdminPanel() {
     finally { setMasterClassLoading(false) }
   }, [translateError])
 
+  const loadCateringPackages = useCallback(async () => {
+    setCateringLoading(true)
+    setCateringError('')
+    try { setCateringPackages(await getCateringPackages()) }
+    catch (e) { setCateringError(translateError(e)) }
+    finally { setCateringLoading(false) }
+  }, [translateError])
+
   // Dashboard'та экөөсүн тең жүктөйбүз
   useEffect(() => {
     if (tab === 'dashboard') { loadMenu(); loadOrders(); loadUsers() }
@@ -122,7 +180,8 @@ export default function AdminPanel() {
     else if (tab === 'reservations') loadReservations()
     else if (tab === 'reviews') loadReviews()
     else if (tab === 'masterClasses') loadMasterClasses()
-  }, [tab, loadMenu, loadOrders, loadUsers, loadReservations, loadReviews, loadMasterClasses])
+    else if (tab === 'catering') loadCateringPackages()
+  }, [tab, loadMenu, loadOrders, loadUsers, loadReservations, loadReviews, loadMasterClasses, loadCateringPackages])
 
   const handleSave = async (e) => {
     e.preventDefault()
@@ -169,8 +228,12 @@ export default function AdminPanel() {
   const handleReservationStatus = async (reservation, status) => {
     setReservationsError('')
     try {
-      await updateAdminReservation(reservation.id, status)
-      setReservations(current => current.map(item => item.id === reservation.id ? { ...item, status } : item))
+      await updateAdminReservation(reservation.id, status, reservation.source)
+      setReservations(current => current.map(item => (
+        item.id === reservation.id && item.source === reservation.source
+          ? { ...item, status }
+          : item
+      )))
     } catch (e) {
       setReservationsError(translateError(e))
     }
@@ -242,6 +305,52 @@ export default function AdminPanel() {
     setMasterClassFormOpen(false)
   }
 
+  const handleCateringSave = async (event) => {
+    event.preventDefault()
+    setCateringSaving(true)
+    setCateringError('')
+    try {
+      const payload = cateringPackagePayload(cateringForm)
+      const saved = cateringEditId
+        ? await updateCateringPackage(cateringEditId, payload)
+        : await createCateringPackage(payload)
+      setCateringPackages(current => cateringEditId
+        ? current.map(item => item.id === saved.id ? saved : item)
+        : [...current, saved])
+      setCateringForm(EMPTY_CATERING_PACKAGE)
+      setCateringEditId(null)
+      setCateringFormOpen(false)
+    } catch (e) {
+      setCateringError(translateError(e))
+    } finally {
+      setCateringSaving(false)
+    }
+  }
+
+  const handleCateringEdit = (item) => {
+    setCateringEditId(item.id)
+    setCateringForm(cateringPackageForm(item))
+    setCateringFormOpen(true)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCateringDelete = async (item) => {
+    if (!confirm(t('deleteConfirm'))) return
+    setCateringError('')
+    try {
+      await deleteCateringPackage(item.id)
+      setCateringPackages(current => current.filter(pkg => pkg.id !== item.id))
+    } catch (e) {
+      setCateringError(translateError(e))
+    }
+  }
+
+  const cancelCateringForm = () => {
+    setCateringForm(EMPTY_CATERING_PACKAGE)
+    setCateringEditId(null)
+    setCateringFormOpen(false)
+  }
+
   const cancelForm = () => { setEditId(null); setForm(EMPTY_ITEM); setShowForm(false) }
   const handleLogout = async () => {
     setLogoutError('')
@@ -288,6 +397,7 @@ export default function AdminPanel() {
     { key: 'menu',      icon: '🍽️', label: 'adminMenu' },
     { key: 'orders',    icon: '📦', label: 'adminOrders' },
     { key: 'reservations', icon: '🪑', label: 'adminBookings' },
+    { key: 'catering', icon: '🥂', label: 'adminCatering' },
     { key: 'reviews', icon: '⭐', label: 'adminReviews' },
     { key: 'masterClasses', icon: '👨‍🍳', label: 'adminMasterClasses' },
     { key: 'users',     icon: '👤', label: 'adminUsers' },
@@ -300,7 +410,7 @@ export default function AdminPanel() {
       <aside className="adm-sidebar">
         <div className="adm-sidebar__brand">
           <span className="adm-sidebar__brand-icon">⚙️</span>
-          <span className="adm-sidebar__brand-text">Рестик Admin</span>
+          <span className="adm-sidebar__brand-text">Рестик {t('adminBrandSuffix')}</span>
         </div>
 
         <nav className="adm-nav">
@@ -347,6 +457,7 @@ export default function AdminPanel() {
             {tab === 'menu' && `🍽️ ${t('adminMenu')}`}
             {tab === 'orders' && `📦 ${t('adminOrders')}`}
             {tab === 'reservations' && `🪑 ${t('adminBookings')}`}
+            {tab === 'catering' && `🥂 ${t('adminCatering')}`}
             {tab === 'reviews' && `⭐ ${t('adminReviews')}`}
             {tab === 'masterClasses' && `👨‍🍳 ${t('adminMasterClasses')}`}
             {tab === 'users' && `👤 ${t('adminUsers')}`}
@@ -378,7 +489,7 @@ export default function AdminPanel() {
                 <div className="adm-stat adm-stat--revenue">
                   <div className="adm-stat__body">
                     <p className="adm-stat__label">{t('adminRevenue')}</p>
-                    <p className="adm-stat__value">{totalRevenue.toLocaleString(dateLocale)} <small>KGS</small></p>
+                    <p className="adm-stat__value">{totalRevenue.toLocaleString(dateLocale)} <small>сом</small></p>
                     <p className="adm-stat__hint">{t('adminAllTime')}</p>
                   </div>
                   <span className="adm-stat__symbol" aria-hidden="true">с</span>
@@ -394,7 +505,7 @@ export default function AdminPanel() {
                 <div className="adm-stat adm-stat--average">
                   <div className="adm-stat__body">
                     <p className="adm-stat__label">{t('adminAverage')}</p>
-                    <p className="adm-stat__value">{Math.round(averageOrder).toLocaleString(dateLocale)} <small>KGS</small></p>
+                    <p className="adm-stat__value">{Math.round(averageOrder).toLocaleString(dateLocale)} <small>сом</small></p>
                     <p className="adm-stat__hint">{t('adminOneOrder')}</p>
                   </div>
                   <span className="adm-stat__symbol" aria-hidden="true">⌁</span>
@@ -561,9 +672,9 @@ export default function AdminPanel() {
                           </div>
                           <div className="adm-recent-order__right">
                             <span className={`adm-badge adm-badge--${order.status === 'new' ? 'green' : 'gray'}`}>
-                              {order.status === 'new' ? t('adminNewOrder') : order.status || t('statusPending')}
+                              {t(ORDER_STATUS_KEYS[order.status] || 'statusPending')}
                             </span>
-                            <p className="adm-recent-order__total">{Number(order.total || 0).toLocaleString(dateLocale)} KGS</p>
+                            <p className="adm-recent-order__total">{Number(order.total || 0).toLocaleString(dateLocale)} сом</p>
                           </div>
                         </div>
                       ))}
@@ -692,7 +803,7 @@ export default function AdminPanel() {
                         <p className="adm-menu-card__name">{item.name}</p>
                         <p className="adm-menu-card__desc">{item.desc}</p>
                         <div className="adm-menu-card__footer">
-                          <span className="adm-menu-card__price">{Number(item.price).toLocaleString('ru-RU')} KGS</span>
+                          <span className="adm-menu-card__price">{Number(item.price).toLocaleString('ru-RU')} сом</span>
                           <div className="adm-menu-card__actions">
                             <button className="adm-icon-btn adm-icon-btn--edit" onClick={() => handleEdit(item)} title={t('adminEditDish')}>✏️</button>
                             <button className="adm-icon-btn adm-icon-btn--del" onClick={() => handleDelete(item.id)} title={t('remove')}>🗑️</button>
@@ -728,7 +839,7 @@ export default function AdminPanel() {
                       <div className="adm-order-card__header">
                         <span className="adm-order-card__id">{t('adminOrder')} #{order.id}</span>
                         <span className={`adm-badge adm-badge--${order.status === 'new' ? 'green' : 'gray'}`}>
-                          {order.status === 'new' ? t('adminNewOrder') : t(order.status === 'confirmed' ? 'statusConfirmed' : order.status === 'cancelled' ? 'statusCancelled' : 'statusPending')}
+                          {t(ORDER_STATUS_KEYS[order.status] || 'statusPending')}
                         </span>
                         <span className="adm-order-card__date">
                           {order.createdAt ? new Date(order.createdAt).toLocaleString(dateLocale) : '—'}
@@ -751,7 +862,7 @@ export default function AdminPanel() {
                           </span>
                         )}
                         <span className="adm-order-card__total">
-                          💰 {Number(order.total || 0).toLocaleString('ru-RU')} KGS
+                          💰 {Number(order.total || 0).toLocaleString('ru-RU')} сом
                         </span>
                         <button className="adm-icon-btn adm-icon-btn--del" onClick={() => handleDeleteOrder(order)}>
                           🗑️ {t('remove')}
@@ -779,16 +890,30 @@ export default function AdminPanel() {
               ) : (
                 <div className="adm-orders-list">
                   {reservations.map(reservation => (
-                    <article className="adm-record-row" key={reservation.id}>
+                    <article className="adm-record-row" key={`${reservation.source || 'sqlite'}-${reservation.id}`}>
                       <div className="adm-record-row__main">
-                        <strong>{reservation.date} · {reservation.time}</strong>
-                        <span>{t('people')} {reservation.guests}</span>
-                        <span>{reservation.table ? t({
-                          window: 'tableWindow',
-                          center: 'tableCenter',
-                          corner: 'tableCorner',
-                          vip: 'vipRoom',
-                        }[reservation.table] || 'bookingTable') : t('bookingTable') + ': —'}</span>
+                        {reservation.type === 'catering' ? (
+                          <>
+                            <strong>{t('cateringRequest')}</strong>
+                            <span>{t('cateringPackage')}: {reservation.packageTitle || '—'}</span>
+                            {reservation.guests && <span>{t('people')} {reservation.guests}</span>}
+                            {reservation.createdAt && (
+                              <time>{new Date(reservation.createdAt).toLocaleString(dateLocale)}</time>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <strong>{reservation.date} · {reservation.time}</strong>
+                            <span>{t('people')} {reservation.guests}</span>
+                            <span>{reservation.table ? t({
+                              window: 'tableWindow',
+                              center: 'tableCenter',
+                              corner: 'tableCorner',
+                              vip: 'vipRoom',
+                            }[reservation.table] || 'bookingTable') : t('bookingTable') + ': —'}</span>
+                          </>
+                        )}
+                        {reservation.name && <span>{reservation.name}</span>}
                         <a href={`tel:${reservation.contact}`}>{reservation.contact}</a>
                       </div>
                       <span className={`adm-badge ${reservation.status === 'confirmed' ? 'adm-badge--green' : 'adm-badge--gray'}`}>
@@ -925,6 +1050,105 @@ export default function AdminPanel() {
                         <div className="adm-record-row__actions">
                           <button className="adm-btn-secondary" onClick={() => handleMasterClassEdit(masterClass)}>{t('adminEditDish')}</button>
                           <button className="adm-icon-btn adm-icon-btn--del" onClick={() => handleMasterClassDelete(masterClass)}>{t('remove')}</button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+
+          {tab === 'catering' && (
+            <div>
+              {cateringError && <p className="adm-error" role="alert">{cateringError}</p>}
+              {!cateringFormOpen && (
+                <button className="adm-btn-primary adm-add-btn" onClick={() => setCateringFormOpen(true)}>
+                  + {t('adminAddCatering')}
+                </button>
+              )}
+              {cateringFormOpen && (
+                <section className="adm-card adm-form-card">
+                  <h2 className="adm-card__title">
+                    {cateringEditId ? t('adminEditCatering') : t('adminAddCatering')}
+                  </h2>
+                  <form onSubmit={handleCateringSave}>
+                    <div className="adm-form-grid">
+                      <label className="adm-field">{t('adminName')} *
+                        <input className="adm-input" value={cateringForm.title} required maxLength={120}
+                          onChange={event => setCateringForm({ ...cateringForm, title: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('adminNameKg')}
+                        <input className="adm-input" value={cateringForm.titleKg} maxLength={120}
+                          onChange={event => setCateringForm({ ...cateringForm, titleKg: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('adminNameEn')}
+                        <input className="adm-input" value={cateringForm.titleEn} maxLength={120}
+                          onChange={event => setCateringForm({ ...cateringForm, titleEn: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('adminPrice')} *
+                        <input className="adm-input" type="number" min="0" step="1" value={cateringForm.price} required
+                          onChange={event => setCateringForm({ ...cateringForm, price: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('cateringGuests')} *
+                        <input className="adm-input" value={cateringForm.guests} required maxLength={80}
+                          onChange={event => setCateringForm({ ...cateringForm, guests: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('cateringGuestsKg')}
+                        <input className="adm-input" value={cateringForm.guestsKg} maxLength={80}
+                          onChange={event => setCateringForm({ ...cateringForm, guestsKg: event.target.value })} />
+                      </label>
+                      <label className="adm-field">{t('cateringGuestsEn')}
+                        <input className="adm-input" value={cateringForm.guestsEn} maxLength={80}
+                          onChange={event => setCateringForm({ ...cateringForm, guestsEn: event.target.value })} />
+                      </label>
+                      <label className="adm-field adm-field--full">{t('cateringFeaturesRu')}
+                        <textarea className="adm-input" rows={4} maxLength={3000} value={cateringForm.featuresRu}
+                          onChange={event => setCateringForm({ ...cateringForm, featuresRu: event.target.value })} />
+                      </label>
+                      <label className="adm-field adm-field--full">{t('cateringFeaturesKg')}
+                        <textarea className="adm-input" rows={4} maxLength={3000} value={cateringForm.featuresKg}
+                          onChange={event => setCateringForm({ ...cateringForm, featuresKg: event.target.value })} />
+                      </label>
+                      <label className="adm-field adm-field--full">{t('cateringFeaturesEn')}
+                        <textarea className="adm-input" rows={4} maxLength={3000} value={cateringForm.featuresEn}
+                          onChange={event => setCateringForm({ ...cateringForm, featuresEn: event.target.value })} />
+                      </label>
+                    </div>
+                    <p className="adm-empty">{t('cateringFeaturesHint')}</p>
+                    <div className="adm-form-actions">
+                      <button type="submit" className="adm-btn-primary" disabled={cateringSaving}>
+                        {cateringSaving ? t('adminSaving') : t('adminSave')}
+                      </button>
+                      <button type="button" className="adm-btn-secondary" onClick={cancelCateringForm}>
+                        {t('adminCancel')}
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              )}
+              <section className="adm-card adm-records-card">
+                <div className="adm-card__heading">
+                  <h2 className="adm-card__title">{t('adminCateringPackages')} ({cateringPackages.length})</h2>
+                  <button className="adm-btn-secondary" onClick={loadCateringPackages}>🔄 {t('adminRefresh')}</button>
+                </div>
+                {cateringLoading ? (
+                  <div className="adm-loading-wrap"><div className="adm-spinner" /><p>{t('adminLoading')}</p></div>
+                ) : cateringPackages.length === 0 ? (
+                  <p className="adm-empty">{t('adminNoCatering')}</p>
+                ) : (
+                  <div className="adm-menu-grid">
+                    {cateringPackages.map(item => (
+                      <article className="adm-card adm-master-class-card" key={item.id}>
+                        <h3>{item.title}</h3>
+                        <p>{item.titleKg || item.title} · {item.titleEn || item.title}</p>
+                        <p>{item.guests} · {Number(item.price).toLocaleString(dateLocale)} сом</p>
+                        <ul>
+                          {(item.features?.ru || []).map((feature, index) => <li key={`${item.id}-${index}`}>{feature}</li>)}
+                        </ul>
+                        <div className="adm-record-row__actions">
+                          <button className="adm-btn-secondary" onClick={() => handleCateringEdit(item)}>{t('adminEditDish')}</button>
+                          <button className="adm-icon-btn adm-icon-btn--del" onClick={() => handleCateringDelete(item)}>{t('remove')}</button>
                         </div>
                       </article>
                     ))}
