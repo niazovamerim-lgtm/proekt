@@ -51,6 +51,7 @@ function App() {
                         <Route path="masterclass" element={<MasterClass />} />
                         <Route path="reviews" element={<Reviews />} />
                         <Route path="giftcard" element={<GiftCard />} />
+                        <Route path="giftcard/:code" element={<GiftCard />} />
                         <Route path="favorites" element={<Favorites />} />
                         <Route path="auth" element={<Auth />} />
                         <Route path="profile" element={<Profile />} />

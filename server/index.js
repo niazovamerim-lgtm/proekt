@@ -73,6 +73,16 @@ database.exec(`
     manage_token_hash TEXT NOT NULL,
     created_at INTEGER NOT NULL
   );
+  CREATE TABLE IF NOT EXISTS gift_cards (
+    id INTEGER PRIMARY KEY,
+    code TEXT NOT NULL UNIQUE,
+    amount INTEGER NOT NULL,
+    recipient_name TEXT NOT NULL,
+    sender_name TEXT NOT NULL,
+    message TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'demo',
+    created_at INTEGER NOT NULL
+  );
   CREATE TABLE IF NOT EXISTS reviews (
     id INTEGER PRIMARY KEY,
     name TEXT NOT NULL,
@@ -630,9 +640,73 @@ async function notifyReservation(reservation) {
   return sendTelegramMessage(message, 'reservation')
 }
 
+async function notifyGiftCard(giftCard, recipientEmail) {
+  const message = [
+    'Создана демо-подарочная карта на сайте Рестик (оплата не подключена)',
+    `Сумма: ${giftCard.amount.toLocaleString('ru-RU')} сом`,
+    `Получатель: ${giftCard.recipientName}`,
+    `Email получателя: ${recipientEmail}`,
+    `Отправитель: ${giftCard.senderName}`,
+    `Код карты: ${giftCard.code}`,
+    `Пожелание: ${giftCard.message || 'не указано'}`,
+  ].join('\n')
+  return sendTelegramMessage(message, 'gift card')
+}
+
+function publicGiftCard(giftCard) {
+  return {
+    code: giftCard.code,
+    amount: giftCard.amount,
+    recipientName: giftCard.recipient_name,
+    senderName: giftCard.sender_name,
+    message: giftCard.message,
+    status: giftCard.status,
+    createdAt: giftCard.created_at,
+  }
+}
+
 async function handleApi(request, response, pathname) {
   if (request.method === 'GET' && pathname === '/api/health') {
     return sendJson(response, 200, { ok: true })
+  }
+
+  if (request.method === 'POST' && pathname === '/api/gift-cards') {
+    enforceRateLimit(request, 'gift-cards', 10)
+    const body = await readJson(request)
+    const amount = Number(body.amount)
+    const recipientName = cleanText(body.recipientName, 100)
+    const recipientEmail = cleanText(body.recipientEmail, 254).toLowerCase()
+    const senderName = cleanText(body.senderName, 100)
+    const message = cleanText(body.message, 500)
+    if (!Number.isInteger(amount) || amount < 100 || amount > 100000) {
+      throw new HttpError(400, 'Неверная сумма подарочной карты')
+    }
+    if (recipientName.length < 2) throw new HttpError(400, 'Укажите имя получателя')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail)) {
+      throw new HttpError(400, 'Укажите корректный email получателя')
+    }
+    if (senderName.length < 2) throw new HttpError(400, 'Укажите имя отправителя')
+
+    const code = randomBytes(18).toString('base64url')
+    const createdAt = Date.now()
+    const inserted = database.prepare(`
+      INSERT INTO gift_cards (code, amount, recipient_name, sender_name, message, created_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(code, amount, recipientName, senderName, message, createdAt)
+    const giftCard = database.prepare('SELECT * FROM gift_cards WHERE id = ?').get(Number(inserted.lastInsertRowid))
+    const telegramNotificationSent = await notifyGiftCard(publicGiftCard(giftCard), recipientEmail)
+    return sendJson(response, 201, {
+      ...publicGiftCard(giftCard),
+      telegramNotificationSent,
+    })
+  }
+
+  const giftCardMatch = pathname.match(/^\/api\/gift-cards\/([A-Za-z0-9_-]{24})$/)
+  if (request.method === 'GET' && giftCardMatch) {
+    enforceRateLimit(request, 'gift-card-lookups', 30)
+    const giftCard = database.prepare('SELECT * FROM gift_cards WHERE code = ?').get(giftCardMatch[1])
+    if (!giftCard) throw new HttpError(404, 'Подарочная карта не найдена')
+    return sendJson(response, 200, publicGiftCard(giftCard))
   }
 
   if (request.method === 'POST' && pathname === '/api/orders') {

@@ -1,41 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { useLang } from '../context/LangContext'
 import './Addresses.css'
-
-const BISHKEK_CENTER = [42.8746, 74.5698]
-const YANDEX_MAPS_SCRIPT_URL = 'https://api-maps.yandex.ru/2.1/'
-
-let yandexMapsPromise
-
-function loadYandexMaps(apiKey) {
-  if (window.ymaps) {
-    return new Promise(resolve => window.ymaps.ready(() => resolve(window.ymaps)))
-  }
-  if (yandexMapsPromise) return yandexMapsPromise
-
-  yandexMapsPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    const scriptUrl = new URL(YANDEX_MAPS_SCRIPT_URL)
-    scriptUrl.searchParams.set('apikey', apiKey)
-    scriptUrl.searchParams.set('lang', 'ru_RU')
-    script.src = scriptUrl.href
-    script.async = true
-    script.onload = () => {
-      if (!window.ymaps) {
-        reject(new Error('Yandex Maps API loaded without its API'))
-        return
-      }
-      window.ymaps.ready(() => resolve(window.ymaps))
-    }
-    script.onerror = () => reject(new Error('Failed to load Yandex Maps API'))
-    document.head.appendChild(script)
-  }).catch(error => {
-    yandexMapsPromise = null
-    throw error
-  })
-
-  return yandexMapsPromise
-}
 
 const addresses = [
   { id: 1, labelKey: 'addressKiev' },
@@ -48,47 +13,11 @@ const addresses = [
 export default function Addresses() {
   const { t } = useLang()
   const [active, setActive] = useState(1)
-  const [mapStatus, setMapStatus] = useState('loading')
-  const mapContainerRef = useRef(null)
-  const mapApiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY?.trim()
   const selectedAddress = addresses.find(address => address.id === active)
   const selectedAddressLabel = t(selectedAddress.labelKey)
-  const searchUrl = `https://yandex.com/maps/?text=${encodeURIComponent(
-    `${selectedAddressLabel} ${t('cityBishkek')}`,
-  )}`
-
-  useEffect(() => {
-    if (!mapApiKey) {
-      setMapStatus('missing-key')
-      return undefined
-    }
-
-    let disposed = false
-    let map
-    setMapStatus('loading')
-
-    loadYandexMaps(mapApiKey)
-      .then(ymaps => {
-        if (disposed || !mapContainerRef.current) return
-        map = new ymaps.Map('addresses__map_canvas', {
-          center: BISHKEK_CENTER,
-          zoom: 12,
-          controls: ['zoomControl', 'typeSelector', 'fullscreenControl'],
-          behaviors: ['drag', 'scrollZoom', 'dblClickZoom', 'multiTouch'],
-        })
-        setMapStatus('ready')
-      })
-      .catch(error => {
-        if (disposed) return
-        console.error('Unable to initialize the Yandex map:', error)
-        setMapStatus('error')
-      })
-
-    return () => {
-      disposed = true
-      map?.destroy()
-    }
-  }, [mapApiKey])
+  const searchQuery = `${selectedAddressLabel}, ${t('cityBishkek')}`
+  const mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&output=embed`
+  const searchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`
 
   return (
     <div className="page-bg">
@@ -127,16 +56,16 @@ export default function Addresses() {
               </span>
             </div>
 
-            <div className="addresses__map-canvas" id="addresses__map_canvas" ref={mapContainerRef}>
-              {mapStatus !== 'ready' && (
-                <p className="addresses__map-state" role={mapStatus === 'error' ? 'alert' : 'status'}>
-                  {mapStatus === 'missing-key'
-                    ? t('mapKeyMissing')
-                    : mapStatus === 'error'
-                      ? t('mapLoadError')
-                      : t('mapLoading')}
-                </p>
-              )}
+            <div className="addresses__map-canvas">
+              <iframe
+                key={active}
+                className="addresses__map-frame"
+                src={mapUrl}
+                title={`${t('mapAccessibleName')}: ${searchQuery}`}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                allowFullScreen
+              />
             </div>
 
             <p className="addresses__map-note">{t('mapPointsPending')}</p>
@@ -145,16 +74,14 @@ export default function Addresses() {
 
         <div className="addresses__selected card">
           <p className="addresses__selected-label">{t('selectedAddress')}</p>
-          <p className="addresses__selected-value">
-            {selectedAddressLabel}, {t('cityBishkek')}
-          </p>
+          <p className="addresses__selected-value">{searchQuery}</p>
           <a
             href={searchUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn-gold addresses__btn"
           >
-            {t('openYandexMaps')}
+            {t('openGoogleMaps')}
           </a>
         </div>
       </div>

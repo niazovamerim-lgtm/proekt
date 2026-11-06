@@ -363,6 +363,19 @@
   gap: 6px;
 }
 
+.simple-page__giftcard-result {
+  align-self: stretch;
+  justify-content: center;
+}
+
+.simple-page__giftcard-notice {
+  padding: 12px 14px;
+  border: 1px solid var(--color-gold-dim);
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
 .simple-page__form-label {
   font-size: 0.82rem;
   font-weight: 600;

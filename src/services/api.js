@@ -114,6 +114,17 @@ export async function logoutAdmin() {
   return requestApi('/api/admin/logout', { method: 'POST' })
 }
 
+export async function createGiftCard(data) {
+  return requestApi('/api/gift-cards', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function getGiftCard(code) {
+  return requestApi(`/api/gift-cards/${encodeURIComponent(code)}`)
+}
+
 export async function getAdminUsers() {
   return requestApi('/api/admin/users')
 }
